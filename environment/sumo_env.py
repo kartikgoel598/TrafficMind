@@ -39,7 +39,12 @@ class SumoEnvironment:
     def reset(self):
         if traci.isLoaded():
             traci.close()
-        sumo_binary = 'sumo-gui' if self.use_gui else 'sumo'
+
+        sumo_home = os.environ.get('Sumo_Home', '')
+        if self.use_gui:
+            sumo_binary = os.path.join(sumo_home, 'bin', 'sumo-gui.exe')
+        else:
+            sumo_binary = os.path.join(sumo_home, 'bin', 'sumo.exe')
         traci.start([sumo_binary,'-c',self.config_path,'--no-warnings','--random'])
         self._step = 0
         self._phase_time = {j:0 for j in self.intersections}
@@ -62,7 +67,7 @@ class SumoEnvironment:
         self._step += 1
         self._update_red_time()
         next_state = self._get_state()
-        rewards    = self._compute_reward()
+        rewards    = self.compute_reward()
         done       = self._is_done()
         return next_state,rewards,done
     def _get_state(self):

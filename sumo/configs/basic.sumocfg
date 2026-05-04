@@ -1,7 +1,7 @@
 <configuration>
     <input>
         <net-file value="../net/grid.net.xml"/>
-        <route-files value="../routes/traffic.rou.xml"/>
+        <route-files value="../routes/peak.rou.xml"/>
     </input>
 
     <time>
