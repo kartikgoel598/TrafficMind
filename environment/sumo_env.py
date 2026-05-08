@@ -36,7 +36,7 @@ class SumoEnvironment:
         self._step = 0                                              # how many simulation step has passed
         self._phase_time = {j: 0 for j in self.intersections}       # how long the current phase has been green at each intersection
         self._current_phase = {j: 0 for j in self.intersections}    # which phase (0 or 1) each intersection is currently on, 0 means green horizontal, 1 means green vertical
-        self._red_time = {j: [0, 0] for j in self.intersections}    # how long has 2 phase in intersectin been waiting (red)
+        self._red_time = {j: [0, 0] for j in self.intersections}    # how long has a phase in intersectin been waiting (red)
 
     def reset(self):
         if traci.isLoaded():
