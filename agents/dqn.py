@@ -23,6 +23,7 @@ class DQNAgent:
                  epsilon=1.0, epsilon_min=0.01,
                  epsilon_decay=0.995,
                  target_update_freq=100):
+        
         self.state_size  = state_size
         self.action_size = action_size
         self.gamma       = gamma
@@ -47,6 +48,7 @@ class DQNAgent:
     def select_action(self,state):
         if random.random() < self.epsilon:
             return random.randrange(self.action_size)
+        
         state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
         with torch.no_grad():
             q_values = self.main_network(state_tensor)

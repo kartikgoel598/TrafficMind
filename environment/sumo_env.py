@@ -10,29 +10,32 @@ class SumoEnvironment:
         self.reward_fn = reward_fn
         self.use_gui = use_gui
         self.intersections = ['J1', 'J2', 'J4', 'J5']
-        self.num_phases = {
+        self.num_phases = { # 2 phases (0 : green horizontal, 1 : green vertical)
             "J1": 2,
             "J2": 2,
             "J4": 2,
             "J5": 2
         }
-        self.lanes = {
+        self.lanes = { # lane from the netedit
             "J1": ['E0_0', '-E1_0', '-E3_0', 'E8_0'],
             'J2': ['E1_0', '-E2_0', 'E5_0', 'E10_0'],
             'J4': ['E7_0', '-E4_0', 'E3_0', '-E9_0'],
             'J5': ['E4_0', '-E6_0', '-E5_0', '-E11_0'],
         }
-        self.neighbours = {
+
+        self.neighbours = { # neighbour for cooperative
             'J1': ['J2', 'J4'],
             "J2": ['J1', 'J5'],
             'J4': ['J1', 'J5'],
             'J5': ['J2', 'J4']
         }
+        
         # 4 lanes * 2 features (queue, wait) + 1 phase + 2 neighbour queues = 11
         self.state_size = 11
         self.action_size = 2
         self.yellow_duration = 3
         self.min_green_time = 10
+
         self._step = 0                                              # how many simulation step has passed
         self._phase_time = {j: 0 for j in self.intersections}       # how long the current phase has been green at each intersection
         self._current_phase = {j: 0 for j in self.intersections}    # which phase (0 or 1) each intersection is currently on, 0 means green horizontal, 1 means green vertical
@@ -43,10 +46,12 @@ class SumoEnvironment:
             traci.close()
 
         sumo_home = os.environ.get('Sumo_Home', '')
+
         if self.use_gui:
             sumo_binary = os.path.join(sumo_home, 'bin', 'sumo-gui.exe')
         else:
             sumo_binary = os.path.join(sumo_home, 'bin', 'sumo.exe')
+
         traci.start([sumo_binary, '-c', self.config_path, '--no-warnings', '--random'])
         self._step = 0
         self._phase_time = {j: 0 for j in self.intersections}
@@ -54,8 +59,9 @@ class SumoEnvironment:
         self._red_time = {j: [0, 0] for j in self.intersections}
         return self._get_state()
 
-    def step(self, actions):
-        for junction, action in actions.items():
+    def step(self, actions): 
+        for junction, action in actions.items(): # actions = {'J1': 0, 'J2':1, etc}
+
             # always increment phase timer, even when blocked by min_green_time
             if self._phase_time[junction] < self.min_green_time:
                 self._phase_time[junction] += 1
@@ -74,7 +80,7 @@ class SumoEnvironment:
         next_state = self._get_state()
         rewards = self.compute_reward()
         done = self._is_done()
-        return next_state, rewardsis , done
+        return next_state, rewards , done
 
     def _get_state(self):
         # FIX #1: restructured so phase and neighbour features are added once per junction,
