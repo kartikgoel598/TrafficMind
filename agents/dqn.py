@@ -77,7 +77,7 @@ class DQNAgent:
             self._update_target_network()
         return loss.item()
     
-    def decay_epilson(self):
+    def decay_epsilon(self):
         self.epsilon = max(
             self.epsilon_min,
             self.epsilon * self.epsilon_decay
