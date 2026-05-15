@@ -21,7 +21,7 @@ EPISODES      = 100       # how many full simulations to run
 BATCH_SIZE    = 64        # how many experiences to learn from at once
 SAVE_EVERY    = 10        # save model weights every N episodes
 MODEL_DIR     = "models"  # folder to save trained weights
-USE_GUI       = False     # set True to watch the simulation window, no need during training
+USE_GUI       = True     # set True to watch the simulation window, no need during training
 # ──────────────────────────────────────────────────────────────────────────────
 
 os.makedirs(MODEL_DIR, exist_ok=True)
@@ -45,21 +45,23 @@ buffers = {
 print(f"Training on {len(env.intersections)} intersections: {env.intersections}")
 print(f"Running for {EPISODES} episodes...\n")
 
-for episode in range(1, EPISODES + 1):
+# debug purposes
+states = env.reset()
+real_state_size = states[env.intersections[0]].shape[0]
+print(f"Detected state size: {real_state_size}")
 
-    states = env.reset()
-    real_state_size = states[env.intersections[0]].shape[0]
-    print(f"Detected state size: {real_state_size}")
-
-    agents = {
+agents = {
     junction: DQNAgent(state_size=real_state_size, action_size=env.action_size)
     for junction in env.intersections
-    }
+}
 
-    buffers = {
-        junction: ReplayBuffer(capacity=50000)
-        for junction in env.intersections
-    }
+buffers = {
+    junction: ReplayBuffer(capacity=50000)
+    for junction in env.intersections
+}
+
+for episode in range(1, EPISODES + 1):
+    states = env.reset()
 
     done   = False
     total_rewards = {j: 0.0 for j in env.intersections}

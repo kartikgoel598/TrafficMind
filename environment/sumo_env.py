@@ -93,10 +93,10 @@ class SumoEnvironment:
             for lane in self.lanes[junction]:
                 queue = traci.lane.getLastStepHaltingNumber(lane)
                 wait = traci.lane.getWaitingTime(lane) / max(1, queue) if queue > 0 else 0.0
-                obs.append(queue / 50.0)
+                obs.append(queue / 50.0) # assumption of maximum halted car and time 
                 obs.append(wait / 300.0)
 
-            # 1 value: current phase (normalised)
+            # 1 value: current phase (normalised), safeguard if more than 2 phases (0, 1)
             obs.append(self._current_phase[junction] / max(1, self.num_phases[junction] - 1))
 
             # 2 values: one averaged queue per neighbour
@@ -151,13 +151,21 @@ class SumoEnvironment:
 
     def _set_yellow(self, junction):
         # FIX #2: was self.current_phase — fixed to self._current_phase
+        # in sumo .net file 
+        # SUMO PHASE INDEX          | MEANING
+        # 0                         | green horizontal
+        # 1                         | yellow horizontal
+        # 2                         | green vertical
+        # 3                         | yellow vertical
+
+        # so 0 will result in 1 (yellow horizontal) and 1 will result in 3 (yellow vertical)
         yellow_phase = self._current_phase[junction] * 2 + 1
         traci.trafficlight.setPhase(junction, yellow_phase)
         for _ in range(self.yellow_duration):
             traci.simulationStep()
             self._step += 1
 
-    def _update_red_time(self):
+    def _update_red_time(self): # self._red_time = {j: [0, 0] for j in self.intersections}
         for junction in self.intersections:
             current = self._current_phase[junction]
             for phase_idx in range(len(self._red_time[junction])):
