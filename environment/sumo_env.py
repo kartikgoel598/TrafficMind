@@ -29,9 +29,7 @@ class SumoEnvironment:
             'J4': ['J1', 'J5'],
             'J5': ['J2', 'J4']
         }
-        
-        # 4 lanes * 2 features (queue, wait) + 1 phase + 2 neighbour queues = 11
-        self.state_size = 11
+        self.state_size = 20
         self.action_size = 2
         self.yellow_duration = 3
         self.min_green_time = 10
@@ -58,30 +56,24 @@ class SumoEnvironment:
         self._current_phase = {j: 0 for j in self.intersections}
         self._red_time = {j: [0, 0] for j in self.intersections}
         return self._get_state()
-
-    def step(self, actions): 
-        for junction, action in actions.items(): # actions = {'J1': 0, 'J2':1, etc}
-
-            # always increment phase timer, even when blocked by min_green_time
-            if self._phase_time[junction] < self.min_green_time:
-                self._phase_time[junction] += 1
-                continue
-            if action == 1:
-                self._set_yellow(junction)
-                next_phase = (self._current_phase[junction] + 1) % self.num_phases[junction]
-                self._current_phase[junction] = next_phase
-                self._phase_time[junction] = 0
-            else:
-                self._phase_time[junction] += 1
-
-        traci.simulationStep()  # make the simulation forward
+    
+    def step(self,actions):
+        for junction , action in actions.items():
+           self._phase_time[junction] += 1
+           if self._phase_time[junction] < self.min_green_time:
+               continue
+           if action == 1:
+               self._set_yellow(junction)
+               next_phase = (self._current_phase[junction] + 1) % self.num_phases[junction]
+               self._current_phase[junction] = next_phase
+               self._phase_time[junction] = 0  
+        traci.simulationStep()
         self._step += 1
         self._update_red_time()
         next_state = self._get_state()
-        rewards = self.compute_reward()
-        done = self._is_done()
-        return next_state, rewards , done
-
+        rewards    = self.compute_reward()
+        done       = self._is_done()
+        return next_state,rewards,done
     def _get_state(self):
         # FIX #1: restructured so phase and neighbour features are added once per junction,
         #         not once per lane. Produces exactly state_size=11 features.
@@ -92,22 +84,15 @@ class SumoEnvironment:
             # 4 lanes × 2 features = 8 values
             for lane in self.lanes[junction]:
                 queue = traci.lane.getLastStepHaltingNumber(lane)
-                wait = traci.lane.getWaitingTime(lane) / max(1, queue) if queue > 0 else 0.0
-                obs.append(queue / 50.0) # assumption of maximum halted car and time 
-                obs.append(wait / 300.0)
-
-            # 1 value: current phase (normalised), safeguard if more than 2 phases (0, 1)
-            obs.append(self._current_phase[junction] / max(1, self.num_phases[junction] - 1))
-
-            # 2 values: one averaged queue per neighbour
-            for neighbour in self.neighbours[junction]:
-                neigh_queue = sum(
-                    traci.lane.getLastStepHaltingNumber(lane)
-                    for lane in self.lanes[neighbour]
-                )
-                obs.append((neigh_queue / len(self.lanes[neighbour])) / 50.0)
-
-            states[junction] = np.array(obs, dtype=np.float32)
+                wait = traci.lane.getWaitingTime(lane)/max(1,queue) if queue > 0 else 0.0
+                obs.append(queue/50.0)
+                obs.append(wait/300.0)
+                obs.append(self._current_phase[junction]/max(1,self.num_phases[junction]-1))
+                for neighbour in self.neighbours[junction]:
+                   neigh_q = sum(traci.lane.getLastStepHaltingNumber(l) for l in self.lanes[neighbour])
+                   obs.append(neigh_q/len(self.lanes[neighbour])/50.0)
+            states[junction] = np.array(obs,dtype=np.float32)
+                
         return states
 
     def compute_reward(self):
@@ -122,16 +107,15 @@ class SumoEnvironment:
             if self.reward_fn == 'local':
                 alpha = 0.5
                 reward = -(own_queue + alpha * own_wait)
-
+                reward = reward / 100.0
             elif self.reward_fn == 'cooperative':
-                # FIX #3: fixed all three typos (reard_fn, neioghbours, beigh_queue)
-                neigh_queue = 0
+                neigh_queue= 0 
                 for neighbour in self.neighbours[junction]:
                     for lane in self.lanes[neighbour]:
                         neigh_queue += traci.lane.getLastStepHaltingNumber(lane)
-                beta = 0.3
-                reward = -(own_queue + beta * neigh_queue)
-
+                    beta = 0.3
+                    reward = -(own_queue + beta * neigh_queue)
+                    reward = reward / 100.0
             elif self.reward_fn == 'fairness':
                 neigh_queue = 0
                 for neighbour in self.neighbours[junction]:
@@ -141,7 +125,7 @@ class SumoEnvironment:
                 beta = 0.3
                 lam = 0.1
                 reward = -(own_queue + beta * neigh_queue + lam * max_starvation)
-
+                reward = reward / 100.0
             else:
                 # FIX #4: actually raise the ValueError
                 raise ValueError(f"Unknown reward function: {self.reward_fn}")
@@ -159,7 +143,7 @@ class SumoEnvironment:
         # 3                         | yellow vertical
 
         # so 0 will result in 1 (yellow horizontal) and 1 will result in 3 (yellow vertical)
-        yellow_phase = self._current_phase[junction] * 2 + 1
+        yellow_phase = self.__current_phase[junction] * 2 + 1
         traci.trafficlight.setPhase(junction, yellow_phase)
         for _ in range(self.yellow_duration):
             traci.simulationStep()
@@ -175,8 +159,9 @@ class SumoEnvironment:
                     self._red_time[junction][phase_idx] += 1
 
     def _is_done(self):
-        no_vehicles = traci.simulation.getMinExpectedNumber() == 0
-        time_up = self._step >= 3600
+        no_vehicles  = traci.simulation.getMinExpectedNumber() == 0
+        time_up      = self._step >= 900
+
         return no_vehicles or time_up
 
     def close(self):
