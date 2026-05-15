@@ -1,8 +1,7 @@
 import os
 import traci
 import numpy as np
-import sys
-
+import platform
 
 class SumoEnvironment:
     def __init__(self, config_path, reward_fn='local', use_gui=False):
@@ -45,11 +44,15 @@ class SumoEnvironment:
 
         sumo_home = os.environ.get('Sumo_Home', '')
 
-        if self.use_gui:
-            sumo_binary = os.path.join(sumo_home, 'bin', 'sumo-gui.exe')
-        else:
-            sumo_binary = os.path.join(sumo_home, 'bin', 'sumo.exe')
 
+        if platform.system() == 'Windows':
+            binary = 'sumo-gui.exe' if self.use_gui else 'sumo.exe'
+        else:
+            binary = 'sumo-gui' if self.use_gui else 'sumo'
+        sumo_binary = os.path.join(sumo_home, 'bin', binary)
+
+        if not os.path.isfile(sumo_binary):
+            raise FileNotFoundError(f"SUMO binary not found: {sumo_binary}")
         traci.start([sumo_binary, '-c', self.config_path, '--no-warnings', '--random'])
         self._step = 0
         self._phase_time = {j: 0 for j in self.intersections}
@@ -113,9 +116,9 @@ class SumoEnvironment:
                 for neighbour in self.neighbours[junction]:
                     for lane in self.lanes[neighbour]:
                         neigh_queue += traci.lane.getLastStepHaltingNumber(lane)
-                    beta = 0.3
-                    reward = -(own_queue + beta * neigh_queue)
-                    reward = reward / 100.0
+                beta = 0.3
+                reward = -(own_queue + beta * neigh_queue)
+                reward = reward / 100.0
             elif self.reward_fn == 'fairness':
                 neigh_queue = 0
                 for neighbour in self.neighbours[junction]:
@@ -143,7 +146,7 @@ class SumoEnvironment:
         # 3                         | yellow vertical
 
         # so 0 will result in 1 (yellow horizontal) and 1 will result in 3 (yellow vertical)
-        yellow_phase = self.__current_phase[junction] * 2 + 1
+        yellow_phase = self._current_phase[junction] * 2 + 1
         traci.trafficlight.setPhase(junction, yellow_phase)
         for _ in range(self.yellow_duration):
             traci.simulationStep()
@@ -160,7 +163,7 @@ class SumoEnvironment:
 
     def _is_done(self):
         no_vehicles  = traci.simulation.getMinExpectedNumber() == 0
-        time_up      = self._step >= 900
+        time_up      = self._step >= 3600
 
         return no_vehicles or time_up
 
