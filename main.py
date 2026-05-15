@@ -15,12 +15,10 @@ from agents.replay_buffer import ReplayBuffer
 
 
 def parse_args():
-    
     parser = argparse.ArgumentParser(
         description='TrafficMind — DQN Traffic Signal Control'
     )
 
-    
     parser.add_argument(
         '--reward',
         type=str,
@@ -29,7 +27,6 @@ def parse_args():
         help='Reward function: local, cooperative, or fairness'
     )
 
-    
     parser.add_argument(
         '--scenario',
         type=str,
@@ -38,7 +35,6 @@ def parse_args():
         help='Traffic scenario: peak or off_peak'
     )
 
-    
     parser.add_argument(
         '--episodes',
         type=int,
@@ -46,14 +42,12 @@ def parse_args():
         help='how much epiosdes you want to train'
     )
 
-    
     parser.add_argument(
         '--gui',
         action='store_true',
         help='SUMO GUI on or off'
     )
 
-    
     parser.add_argument(
         '--seed',
         type=int,
@@ -77,11 +71,7 @@ def parse_args():
 
     return parser.parse_args()
 
-
-
-
 def set_seed(seed):
-    
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -91,10 +81,7 @@ def set_seed(seed):
         torch.cuda.manual_seed(seed)
 
 
-
-
 def get_config_path(scenario):
-    
     base_dir = os.path.dirname(os.path.abspath(__file__))
 
     configs = {
@@ -107,7 +94,6 @@ def get_config_path(scenario):
 
 
 def train(args):
-
     print("=" * 60)
     print(f"  TrafficMind Training Shuru!")
     print(f"  Reward   : {args.reward}")
