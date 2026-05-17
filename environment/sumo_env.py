@@ -4,7 +4,8 @@ import numpy as np
 import sys
 
 class SumoEnvironment:
-    def __init__(self,config_path,reward_fn='local',use_gui=False):
+    def __init__(self,config_path,reward_fn='local',use_gui=False,seed = 42):
+        self.seed = seed
         self.config_path = config_path
         self.reward_fn = reward_fn
         self.use_gui = use_gui
@@ -40,7 +41,7 @@ class SumoEnvironment:
         if traci.isLoaded():
             traci.close()
         sumo_binary = 'sumo-gui' if self.use_gui else 'sumo'
-        traci.start([sumo_binary,'-c',self.config_path,'--no-warnings','--random'])
+        traci.start([sumo_binary,'-c',self.config_path,'--no-warnings',f'--seed={self.seed}'])
         self._step = 0
         self._phase_time = {j:0 for j in self.intersections}
         self._current_phase = {j: 0 for j in self.intersections}
@@ -49,14 +50,18 @@ class SumoEnvironment:
     
     def step(self,actions):
         for junction , action in actions.items():
-           self._phase_time[junction] += 1
-           if self._phase_time[junction] < self.min_green_time:
-               continue
-           if action == 1:
-               self._set_yellow(junction)
-               next_phase = (self._current_phase[junction] + 1) % self.num_phases[junction]
-               self._current_phase[junction] = next_phase
-               self._phase_time[junction] = 0  
+            self._phase_time[junction]+=1
+            if self._phase_time[junction] < self.min_green_time:
+                traci.trafficlight.setPhase(junction,
+                                            self._current_phase[junction]*2)
+                continue
+            if action == 1:
+                self._set_yellow(junction)
+                next_phase = (self._current_phase[junction] + 1) % self.num_phases[junction]
+                self._current_phase[junction]=next_phase
+                self._phase_time[junction]=0
+            else:
+                traci.trafficlight.setPhase(junction,self._current_phase[junction]*2)
         traci.simulationStep()
         self._step += 1
         self._update_red_time()

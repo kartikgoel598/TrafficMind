@@ -123,7 +123,8 @@ def train(args):
     env = SumoEnvironment(
         config_path=config_path,
         reward_fn=args.reward,
-        use_gui=args.gui
+        use_gui=args.gui,
+        seed=args.seed
     )
 
     intersections = ['J1', 'J2', 'J4', 'J5']
@@ -169,6 +170,17 @@ def train(args):
             f"{args.reward}_{args.scenario}_{timestamp}"
             )
     os.makedirs(output_dir, exist_ok=True)
+
+    episode_rewards = []
+    episode_losses = []
+    if args.resume:
+        old_path = os.path.join(args.resume, 'results.json')
+        if os.path.exists(old_path):
+            with open(old_path, 'r') as f:
+                old_results = json.load(f)
+            episode_rewards = old_results.get('episode_rewards', [])
+            episode_losses  = old_results.get('episode_losses', [])
+            print(f"  old {len(episode_rewards)} episodes load")
 
     start = args.start_episode if args.resume else 1
     for episode in range(start, args.episodes + 1):
