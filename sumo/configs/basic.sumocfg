@@ -1,7 +1,13 @@
+<!-- 
+THIS FILE IS NO LONGER USED AND ONLY USED DURING EARLY DEVELOPMENT, YOU CAN IGNORE THIS FILE
+
+step-length is not set, preprocessing is non existent, and endtime (end value) doesnt match step time (3600)
+-->
+<?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <input>
         <net-file value="../net/grid.net.xml"/>
-        <route-files value="../routes/traffic.rou.xml"/>
+        <route-files value="../routes/peak.rou.xml"/>
     </input>
 
     <time>

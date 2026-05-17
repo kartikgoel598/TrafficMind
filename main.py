@@ -1,4 +1,3 @@
-
 import os
 import argparse
 import numpy as np
@@ -6,21 +5,21 @@ import torch
 import random
 import json
 from datetime import datetime
+import sys
 
+from dotenv import load_dotenv
+load_dotenv()  # loads Sumo_Home from .env before anything else runs
+sys.path.append(os.path.join(os.getenv('Sumo_Home'), "tools"))
 
 from environment.sumo_env import SumoEnvironment
 from agents.dqn import DQNAgent
 from agents.replay_buffer import ReplayBuffer
 
-
-
 def parse_args():
-    
     parser = argparse.ArgumentParser(
         description='TrafficMind — DQN Traffic Signal Control'
     )
 
-    
     parser.add_argument(
         '--reward',
         type=str,
@@ -29,7 +28,6 @@ def parse_args():
         help='Reward function: local, cooperative, or fairness'
     )
 
-    
     parser.add_argument(
         '--scenario',
         type=str,
@@ -38,7 +36,6 @@ def parse_args():
         help='Traffic scenario: peak or off_peak'
     )
 
-    
     parser.add_argument(
         '--episodes',
         type=int,
@@ -46,14 +43,12 @@ def parse_args():
         help='how much epiosdes you want to train'
     )
 
-    
     parser.add_argument(
         '--gui',
         action='store_true',
         help='SUMO GUI on or off'
     )
 
-    
     parser.add_argument(
         '--seed',
         type=int,
@@ -77,24 +72,16 @@ def parse_args():
 
     return parser.parse_args()
 
-
-
-
 def set_seed(seed):
-    
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
 
-    
     if torch.cuda.is_available():
         torch.cuda.manual_seed(seed)
 
 
-
-
 def get_config_path(scenario):
-    
     base_dir = os.path.dirname(os.path.abspath(__file__))
 
     configs = {
@@ -104,10 +91,7 @@ def get_config_path(scenario):
     return configs[scenario]
 
 
-
-
 def train(args):
-
     print("=" * 60)
     print(f"  TrafficMind Training Shuru!")
     print(f"  Reward   : {args.reward}")
@@ -239,7 +223,7 @@ def train(args):
 
         current_epsilon = agents['J1'].epsilon
 
-        if episode % 10 == 0:
+        if episode % 1 == 0:
             print(
                 f"Episode {episode:4d}/{args.episodes} | "
                 f"Reward: {avg_reward:8.2f} | "
@@ -287,8 +271,6 @@ def train(args):
     env.close()
 
     return results
-
-
 
 if __name__ == '__main__':
     args = parse_args()

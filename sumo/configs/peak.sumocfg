@@ -3,34 +3,23 @@
                xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
 
     <input>
-        
         <net-file value="../net/grid.net.xml"/>
-
-       
         <route-files value="../routes/peak.rou.xml"/>
     </input>
 
     <time>
-        
         <begin value="0"/>
-
-       
         <end value="900"/>
-
-       
         <step-length value="1"/>
     </time>
 
     <processing>
-        <!-- Agar gaadi road pe fit nahi — wait kare, teleport na kare -->
-        <ignore-junction-blocker value="10"/>
-
-        
+        <!-- If the car doesn't fit on the road wait, don't teleport -->
+        <ignore-junction-blocker value="10"/>    
         <time-to-teleport value="300"/>
     </processing>
 
     <report>
-        
         <verbose value="false"/>
         <no-step-log value="true"/>
     </report>
