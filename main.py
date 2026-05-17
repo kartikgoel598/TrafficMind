@@ -1,4 +1,3 @@
-
 import os
 import argparse
 import numpy as np
@@ -6,13 +5,15 @@ import torch
 import random
 import json
 from datetime import datetime
+import sys
 
+from dotenv import load_dotenv
+load_dotenv()  # loads Sumo_Home from .env before anything else runs
+sys.path.append(os.path.join(os.getenv('Sumo_Home'), "tools"))
 
 from environment.sumo_env import SumoEnvironment
 from agents.dqn import DQNAgent
 from agents.replay_buffer import ReplayBuffer
-
-
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -76,7 +77,6 @@ def set_seed(seed):
     np.random.seed(seed)
     torch.manual_seed(seed)
 
-    
     if torch.cuda.is_available():
         torch.cuda.manual_seed(seed)
 
@@ -89,8 +89,6 @@ def get_config_path(scenario):
         'off_peak': os.path.join(base_dir, 'sumo', 'configs', 'off_peak.sumocfg'),
     }
     return configs[scenario]
-
-
 
 
 def train(args):
@@ -109,7 +107,8 @@ def train(args):
     env = SumoEnvironment(
         config_path=config_path,
         reward_fn=args.reward,
-        use_gui=args.gui
+        use_gui=args.gui,
+        seed=args.seed
     )
 
     intersections = ['J1', 'J2', 'J4', 'J5']
@@ -155,6 +154,17 @@ def train(args):
             f"{args.reward}_{args.scenario}_{timestamp}"
             )
     os.makedirs(output_dir, exist_ok=True)
+
+    episode_rewards = []
+    episode_losses = []
+    if args.resume:
+        old_path = os.path.join(args.resume, 'results.json')
+        if os.path.exists(old_path):
+            with open(old_path, 'r') as f:
+                old_results = json.load(f)
+            episode_rewards = old_results.get('episode_rewards', [])
+            episode_losses  = old_results.get('episode_losses', [])
+            print(f"  old {len(episode_rewards)} episodes load")
 
     start = args.start_episode if args.resume else 1
     for episode in range(start, args.episodes + 1):
@@ -213,7 +223,7 @@ def train(args):
 
         current_epsilon = agents['J1'].epsilon
 
-        if episode % 10 == 0:
+        if episode % 1 == 0:
             print(
                 f"Episode {episode:4d}/{args.episodes} | "
                 f"Reward: {avg_reward:8.2f} | "
@@ -261,8 +271,6 @@ def train(args):
     env.close()
 
     return results
-
-
 
 if __name__ == '__main__':
     args = parse_args()
