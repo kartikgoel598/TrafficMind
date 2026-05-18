@@ -64,27 +64,46 @@ class SumoEnvironment:
         self._red_time = {j: [0, 0] for j in self.intersections}
         return self._get_state()
     
+    # executed every step (for 900 steps)
+    '''
+    resolved issues
+    issues  : action is stored to memory even if the sumo does not execute it.
+    fix     : added executed_actions to save if the agent want to switch to memory, even though SUMO cannot execute it (because min-green time) 
+    '''
     def step(self,actions):
-        for junction , action in actions.items():
-            self._phase_time[junction]+=1
+        # track what SUMO actually executed (if agent want to changem, but min_green blocked, then store 0)
+        executed_actions = {}
+
+        for junction, action in actions.items():
+            self._phase_time[junction] += 1
+
             if self._phase_time[junction] < self.min_green_time:
-                traci.trafficlight.setPhase(junction,
-                                            self._current_phase[junction]*2)
+                # min_green blocked the switch, treat as KEEP even if the agent want to switch
+                # * 2 to follow SUMO phase indexing (0 : green horizontal, 2: green vertical)
+                traci.trafficlight.setPhase(junction, self._current_phase[junction] * 2)
+                executed_actions[junction] = 0 # keep
                 continue
+
+
             if action == 1:
                 self._set_yellow(junction)
                 next_phase = (self._current_phase[junction] + 1) % self.num_phases[junction]
                 self._current_phase[junction]=next_phase
-                self._phase_time[junction]=0
+                self._phase_time[junction] = 0
+                executed_actions[junction] = 1 # actually changed
             else:
                 traci.trafficlight.setPhase(junction,self._current_phase[junction]*2)
+                executed_actions[junction] = 0 # keep
+
         traci.simulationStep()
         self._step += 1
         self._update_red_time()
         next_state = self._get_state()
         rewards    = self.compute_reward()
         done       = self._is_done()
-        return next_state,rewards,done
+        return next_state, rewards, done, executed_actions
+
+    
     def _get_state(self):
         # FIX #1: restructured so phase and neighbour features are added once per junction,
         #         not once per lane. Produces exactly state_size=11 features.

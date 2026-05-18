@@ -179,18 +179,18 @@ def train(args):
 
         while not done:
 
-            actions = {}
+            actions = {} # {'J1': []}
             for junction in intersections:
                 actions[junction] = agents[junction].select_action(
                     states[junction]
                 )
 
-            next_states, rewards, done = env.step(actions)
+            next_states, rewards, done, executed_actions = env.step(actions)
 
             for junction in intersections:
                 buffers[junction].push(
                     state=states[junction],
-                    action=actions[junction],
+                    action=executed_actions[junction], # change to actually executed action in SUMO to memory (buffer)
                     reward=rewards[junction],
                     next_state=next_states[junction],
                     done=float(done)
