@@ -93,7 +93,7 @@ def get_config_path(scenario):
 
 def train(args):
     print("=" * 60)
-    print(f"  TrafficMind Training Shuru!")
+    print(f"  TrafficMind Training started!")
     print(f"  Reward   : {args.reward}")
     print(f"  Scenario : {args.scenario}")
     print(f"  Episodes : {args.episodes}")
@@ -223,7 +223,7 @@ def train(args):
 
         current_epsilon = agents['J1'].epsilon
 
-        if episode % 1 == 0:
+        if episode % 10 == 0:
             print(
                 f"Episode {episode:4d}/{args.episodes} | "
                 f"Reward: {avg_reward:8.2f} | "
