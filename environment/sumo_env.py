@@ -32,7 +32,7 @@ class SumoEnvironment:
             'J4': ['J1', 'J5'],
             'J5': ['J2', 'J4']
         }
-        self.state_size = 11
+        self.state_size = 12
         self.action_size = 2
         self.yellow_duration = 3
         self.min_green_time = 15
@@ -64,48 +64,120 @@ class SumoEnvironment:
         self._red_time = {j: [0, 0] for j in self.intersections}
         return self._get_state()
     
-    def step(self,actions):
-        for junction , action in actions.items():
-            self._phase_time[junction]+=1
+    def step(self, actions):
+        executed_actions = {} 
+
+        for junction, action in actions.items():
+            self._phase_time[junction] += 1
+
             if self._phase_time[junction] < self.min_green_time:
-                traci.trafficlight.setPhase(junction,
-                                            self._current_phase[junction]*2)
+                traci.trafficlight.setPhase(
+                junction, self._current_phase[junction] * 2
+            )
+                executed_actions[junction] = 0  
                 continue
+
             if action == 1:
                 self._set_yellow(junction)
                 next_phase = (self._current_phase[junction] + 1) % self.num_phases[junction]
-                self._current_phase[junction]=next_phase
-                self._phase_time[junction]=0
+                self._current_phase[junction] = next_phase
+                self._phase_time[junction] = 0
+                executed_actions[junction] = 1  
             else:
-                traci.trafficlight.setPhase(junction,self._current_phase[junction]*2)
+                traci.trafficlight.setPhase(
+                junction, self._current_phase[junction] * 2
+            )
+                executed_actions[junction] = 0  
+
         traci.simulationStep()
         self._step += 1
         self._update_red_time()
         next_state = self._get_state()
         rewards    = self.compute_reward()
         done       = self._is_done()
-        return next_state,rewards,done
+
+        return next_state, rewards, done, executed_actions  
     def _get_state(self):
-        # FIX #1: restructured so phase and neighbour features are added once per junction,
-        #         not once per lane. Produces exactly state_size=11 features.
+    # FIX #1:
+    # Features added once per junction (not per lane)
+    # Total:
+    # 8 lane features + 1 phase + 1 phase_time + neighbour features
+
         states = {}
+
         for junction in self.intersections:
             obs = []
 
+            
             # 4 lanes × 2 features = 8 values
+            
             for lane in self.lanes[junction]:
-                queue = traci.lane.getLastStepHaltingNumber(lane)
-                wait = traci.lane.getWaitingTime(lane)/max(1,queue) if queue > 0 else 0.0
-                obs.append(queue/50.0)
-                obs.append(wait/300.0)
-            obs.append(self._current_phase[junction]/max(1,self.num_phases[junction]-1))
-            for neighbour in self.neighbours[junction]:
-                neigh_q = sum(traci.lane.getLastStepHaltingNumber(l) for l in self.lanes[neighbour])
-                obs.append(neigh_q/len(self.lanes[neighbour])/50.0)
-            states[junction] = np.array(obs,dtype=np.float32)
-                
-        return states
 
+                queue = traci.lane.getLastStepHaltingNumber(lane)
+
+                wait = (
+                    traci.lane.getWaitingTime(lane) / max(1, queue)
+                    if queue > 0 else 0.0
+                )
+
+               
+                obs.append(queue / 50.0)
+
+         
+                obs.append(wait / 300.0)
+
+            
+            # FIX #2: Use ACTUAL SUMO phase instead of internal tracking
+            
+
+            actual_phase = traci.trafficlight.getPhase(junction)
+
+            # SUMO:
+            # 0 = green horizontal
+            # 1 = yellow horizontal
+            # 2 = green vertical
+            # 3 = yellow vertical
+
+            # Convert:
+            # 0,1 -> phase 0
+            # 2,3 -> phase 1
+
+            normalized_phase = (
+                (actual_phase // 2)
+                / max(1, self.num_phases[junction] - 1)
+            )
+
+            obs.append(normalized_phase)
+
+           
+            # FIX #3: Add normalized phase time
+            
+
+            phase_time_normalized = min(
+                self._phase_time[junction] / self.min_green_time,
+                1.0
+            )
+
+            obs.append(phase_time_normalized)
+
+            
+            # Neighbour congestion feature
+            
+
+            for neighbour in self.neighbours[junction]:
+
+                neigh_q = sum(
+                    traci.lane.getLastStepHaltingNumber(l)
+                    for l in self.lanes[neighbour]
+                )
+
+                obs.append(
+                    neigh_q / len(self.lanes[neighbour]) / 50.0
+                )
+
+            states[junction] = np.array(obs, dtype=np.float32)
+
+        return states
     def compute_reward(self):
         rewards = {}
         for junction in self.intersections:
