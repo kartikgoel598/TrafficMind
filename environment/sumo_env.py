@@ -167,7 +167,7 @@ class SumoEnvironment:
 
     def _is_done(self):
         no_vehicles  = traci.simulation.getMinExpectedNumber() == 0
-        time_up      = self._step >= 3600
+        time_up      = self._step >= 900
 
         return no_vehicles or time_up
 
