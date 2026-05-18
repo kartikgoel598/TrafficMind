@@ -32,7 +32,7 @@ class SumoEnvironment:
             'J4': ['J1', 'J5'],
             'J5': ['J2', 'J4']
         }
-        self.state_size = 11
+        self.state_size = 12 # added new state from 11 to 12 which is phase_time
         self.action_size = 2
         self.yellow_duration = 3
         self.min_green_time = 15
@@ -118,8 +118,10 @@ class SumoEnvironment:
     fix 1 : restructured so phase and neighbour features are added once per junction, not once per lane. Produces exactly state_size= 11 features.
     fix 2 : during the yellow transition in _set_yellow(), SUMO is on phase 1 or 3 (yellow), but self._current_phase MAY already got updated to the next 
             green phase. so if _get_state() is ever called mid-yellow, Python and SUMO disagree. Added get true phase and adjusted _get_state
+    fix 3 : added phase_time to the agent so the agent know whether it is possible to switch. No way to learn "don't bother switching", this helps the model
+            learn that its impossible.
     '''
-    # return 11 states of all junction
+    # return 12 states of all junction
     def _get_state(self):
         states = {}
         for junction in self.intersections:
@@ -134,6 +136,11 @@ class SumoEnvironment:
 
             true_phase = self._get_true_phase(junction)
             obs.append(true_phase / max(1, self.num_phases[junction] - 1))
+
+            # phase_time normalised by min_green  — FIX #3
+            # value < 1.0 means switching is still blocked, >= 1.0 means switching is allowed
+            obs.append(min(self._phase_time[junction] / self.min_green_time, 1.0))
+
 
             for neighbour in self.neighbours[junction]:
                 neigh_q = sum(traci.lane.getLastStepHaltingNumber(l) for l in self.lanes[neighbour])
