@@ -124,10 +124,13 @@ class SumoEnvironment:
     # return 12 states of all junction
     def _get_state(self):
         states = {}
+
         for junction in self.intersections:
             obs = []
 
+            
             # 4 lanes × 2 features = 8 values
+            
             for lane in self.lanes[junction]:
                 queue = traci.lane.getLastStepHaltingNumber(lane)
                 wait = traci.lane.getWaitingTime(lane)/max(1,queue) if queue > 0 else 0.0
@@ -154,12 +157,14 @@ class SumoEnvironment:
         for junction in self.intersections:
             own_queue = 0
             own_wait = 0
+
             for lane in self.lanes[junction]:
                 own_queue += traci.lane.getLastStepHaltingNumber(lane)
                 own_wait += traci.lane.getWaitingTime(lane)
+            
+            alpha = 0.5
 
             if self.reward_fn == 'local':
-                alpha = 0.5
                 reward = local_reward(own_queue, own_wait, alpha)
             elif self.reward_fn == 'cooperative':
                 neigh_queue= 0 
@@ -167,7 +172,7 @@ class SumoEnvironment:
                     for lane in self.lanes[neighbour]:
                         neigh_queue += traci.lane.getLastStepHaltingNumber(lane)
                 beta = 0.3
-                reward = cooperative_reward(own_queue, [neigh_queue], beta)
+                reward = cooperative_reward(own_queue, own_wait, [neigh_queue], alpha, beta)
             elif self.reward_fn == 'fairness':
                 neigh_queue = 0
                 for neighbour in self.neighbours[junction]:
@@ -176,7 +181,7 @@ class SumoEnvironment:
                 max_starvation = max(self._red_time[junction])
                 beta = 0.3
                 lam = 0.1
-                reward = fairness_reward(own_queue, [neigh_queue], max_starvation, beta, lam)
+                reward = fairness_reward(own_queue, own_wait, [neigh_queue], max_starvation, alpha, beta, lam)
             else:
                 raise ValueError(f"Unknown reward function: {self.reward_fn}")
 

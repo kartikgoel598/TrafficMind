@@ -142,6 +142,9 @@ def train(args):
         for junction in intersections:
             agents[junction].epsilon = resumed_epsilon
         print(f'epsilon set to : {resumed_epsilon:.3f}')
+        for junction in intersections:
+            agents[junction]._update_target_network()
+        print("Target networks synced")
 
     episode_rewards = []
     episode_losses = []
@@ -178,12 +181,12 @@ def train(args):
         done = False
 
         while not done:
-
-            actions = {} # {'J1': []}
-            for junction in intersections:
-                actions[junction] = agents[junction].select_action(
-                    states[junction]
-                )
+            # shuffle the intersection
+            shuffled = intersections.copy()
+            random.shuffle(shuffled)
+            actions = {}
+            for junction in shuffled:
+                actions[junction] = agents[junction].select_action(states[junction])
 
             next_states, rewards, done, executed_actions = env.step(actions)
 
