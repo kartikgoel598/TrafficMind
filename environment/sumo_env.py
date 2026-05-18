@@ -103,10 +103,24 @@ class SumoEnvironment:
         done       = self._is_done()
         return next_state, rewards, done, executed_actions
 
-    
+    # return phase of specified junction in the SUMO currently
+    def _get_true_phase(self, junction):
+        '''
+        0 (green horizontal) -> 0
+        1 (yellow horizontal) -> 0
+        2 (green vertical) -> 1
+        3 (yellow vertical) -> 1 
+        '''
+        sumo_phase =  traci.trafficlight.getPhase(junction)
+        return sumo_phase // 2
+
+    '''
+    fix 1 : restructured so phase and neighbour features are added once per junction, not once per lane. Produces exactly state_size= 11 features.
+    fix 2 : during the yellow transition in _set_yellow(), SUMO is on phase 1 or 3 (yellow), but self._current_phase MAY already got updated to the next 
+            green phase. so if _get_state() is ever called mid-yellow, Python and SUMO disagree. Added get true phase and adjusted _get_state
+    '''
+    # return 11 states of all junction
     def _get_state(self):
-        # FIX #1: restructured so phase and neighbour features are added once per junction,
-        #         not once per lane. Produces exactly state_size=11 features.
         states = {}
         for junction in self.intersections:
             obs = []
@@ -117,7 +131,10 @@ class SumoEnvironment:
                 wait = traci.lane.getWaitingTime(lane)/max(1,queue) if queue > 0 else 0.0
                 obs.append(queue/50.0)
                 obs.append(wait/300.0)
-            obs.append(self._current_phase[junction]/max(1,self.num_phases[junction]-1))
+
+            true_phase = self._get_true_phase(junction)
+            obs.append(true_phase / max(1, self.num_phases[junction] - 1))
+
             for neighbour in self.neighbours[junction]:
                 neigh_q = sum(traci.lane.getLastStepHaltingNumber(l) for l in self.lanes[neighbour])
                 obs.append(neigh_q/len(self.lanes[neighbour])/50.0)
