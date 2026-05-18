@@ -98,10 +98,10 @@ class SumoEnvironment:
                 wait = traci.lane.getWaitingTime(lane)/max(1,queue) if queue > 0 else 0.0
                 obs.append(queue/50.0)
                 obs.append(wait/300.0)
-                obs.append(self._current_phase[junction]/max(1,self.num_phases[junction]-1))
-                for neighbour in self.neighbours[junction]:
-                   neigh_q = sum(traci.lane.getLastStepHaltingNumber(l) for l in self.lanes[neighbour])
-                   obs.append(neigh_q/len(self.lanes[neighbour])/50.0)
+            obs.append(self._current_phase[junction]/max(1,self.num_phases[junction]-1))
+            for neighbour in self.neighbours[junction]:
+                neigh_q = sum(traci.lane.getLastStepHaltingNumber(l) for l in self.lanes[neighbour])
+                obs.append(neigh_q/len(self.lanes[neighbour])/50.0)
             states[junction] = np.array(obs,dtype=np.float32)
                 
         return states
