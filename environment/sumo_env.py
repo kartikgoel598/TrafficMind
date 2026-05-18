@@ -2,6 +2,9 @@ import os
 import traci
 import numpy as np
 import platform
+from rewards.local import local_reward
+from rewards.cooperative import cooperative_reward
+from rewards.fairness import fairness_reward
 
 class SumoEnvironment:
     def __init__(self,config_path,reward_fn='local',use_gui=False,seed = 42):
@@ -29,10 +32,10 @@ class SumoEnvironment:
             'J4': ['J1', 'J5'],
             'J5': ['J2', 'J4']
         }
-        self.state_size = 20
+        self.state_size = 11
         self.action_size = 2
         self.yellow_duration = 3
-        self.min_green_time = 10
+        self.min_green_time = 15
 
         self._step = 0                                              # how many simulation step has passed
         self._phase_time = {j: 0 for j in self.intersections}       # how long the current phase has been green at each intersection
@@ -114,16 +117,14 @@ class SumoEnvironment:
 
             if self.reward_fn == 'local':
                 alpha = 0.5
-                reward = -(own_queue + alpha * own_wait)
-                reward = reward / 100.0
+                reward = local_reward(own_queue, own_wait, alpha)
             elif self.reward_fn == 'cooperative':
                 neigh_queue= 0 
                 for neighbour in self.neighbours[junction]:
                     for lane in self.lanes[neighbour]:
                         neigh_queue += traci.lane.getLastStepHaltingNumber(lane)
                 beta = 0.3
-                reward = -(own_queue + beta * neigh_queue)
-                reward = reward / 100.0
+                reward = cooperative_reward(own_queue, [neigh_queue], beta)
             elif self.reward_fn == 'fairness':
                 neigh_queue = 0
                 for neighbour in self.neighbours[junction]:
@@ -132,10 +133,8 @@ class SumoEnvironment:
                 max_starvation = max(self._red_time[junction])
                 beta = 0.3
                 lam = 0.1
-                reward = -(own_queue + beta * neigh_queue + lam * max_starvation)
-                reward = reward / 100.0
+                reward = fairness_reward(own_queue, [neigh_queue], max_starvation, beta, lam)
             else:
-                # FIX #4: actually raise the ValueError
                 raise ValueError(f"Unknown reward function: {self.reward_fn}")
 
             rewards[junction] = reward
@@ -168,7 +167,7 @@ class SumoEnvironment:
 
     def _is_done(self):
         no_vehicles  = traci.simulation.getMinExpectedNumber() == 0
-        time_up      = self._step >= 3600
+        time_up      = self._step >= 900
 
         return no_vehicles or time_up
 

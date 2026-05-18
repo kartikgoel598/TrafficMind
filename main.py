@@ -120,14 +120,14 @@ def train(args):
         agents[junction] = DQNAgent(
             state_size=env.state_size,
             action_size=env.action_size,
-            lr=0.001,
+            lr=0.0005,
             gamma=0.99,
             epsilon=1.0,
             epsilon_min=0.01,
             epsilon_decay=0.990,
-            target_update_freq=100
+            target_update_freq=50
         )
-        buffers[junction] = ReplayBuffer(capacity=50000)
+        buffers[junction] = ReplayBuffer(capacity=100000)
     
     if args.resume:
         print(f"  Resuming from checkpoint: {args.resume}")
@@ -199,7 +199,7 @@ def train(args):
 
             for junction in intersections:
                 loss = agents[junction].train_step(
-                    buffers[junction], batch_size=64
+                    buffers[junction], batch_size=128
                 )
                 if loss is not None:
                     total_losses.append(loss)
