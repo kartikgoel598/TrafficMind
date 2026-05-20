@@ -144,7 +144,7 @@ def train(args):
         print(f'epsilon set to : {resumed_epsilon:.3f}')
         for junction in intersections:
             agents[junction]._update_target_network()
-        print("  Target networks synced ")
+        print("Target networks synced")
 
     
     if args.resume:
@@ -180,7 +180,7 @@ def train(args):
         done = False
 
         while not done:
-
+            # shuffle the intersection
             shuffled = intersections.copy()
             random.shuffle(shuffled)
             actions = {}
@@ -192,7 +192,7 @@ def train(args):
             for junction in intersections:
                 buffers[junction].push(
                     state=states[junction],
-                    action= executed_actions[junction],
+                    action=executed_actions[junction], # change to actually executed action in SUMO to memory (buffer)
                     reward=rewards[junction],
                     next_state=next_states[junction],
                     done=float(done)
