@@ -188,24 +188,31 @@ class SumoEnvironment:
                 own_wait += traci.lane.getWaitingTime(lane)
 
             if self.reward_fn == 'local':
-                alpha = 0.5
-                reward = local_reward(own_queue, own_wait, alpha)
+                reward = local_reward(own_queue, own_wait)
+
             elif self.reward_fn == 'cooperative':
-                neigh_queue= 0 
+                neigh_queues = []
                 for neighbour in self.neighbours[junction]:
-                    for lane in self.lanes[neighbour]:
-                        neigh_queue += traci.lane.getLastStepHaltingNumber(lane)
-                beta = 0.3
-                reward = cooperative_reward(own_queue, [neigh_queue], beta)
+                    nq = sum(
+                        traci.lane.getLastStepHaltingNumber(l)
+                        for l in self.lanes[neighbour]
+                    )
+                    neigh_queues.append(nq)
+                reward = cooperative_reward(own_queue, own_wait, neigh_queues)
+
+
             elif self.reward_fn == 'fairness':
-                neigh_queue = 0
+                neigh_queues = []
                 for neighbour in self.neighbours[junction]:
-                    for lane in self.lanes[neighbour]:
-                        neigh_queue += traci.lane.getLastStepHaltingNumber(lane)
+                    nq = sum(
+                        traci.lane.getLastStepHaltingNumber(l)
+                        for l in self.lanes[neighbour]
+        )
+                    neigh_queues.append(nq)
                 max_starvation = max(self._red_time[junction])
-                beta = 0.3
-                lam = 0.1
-                reward = fairness_reward(own_queue, [neigh_queue], max_starvation, beta, lam)
+                reward = fairness_reward(
+        own_queue, own_wait, neigh_queues, max_starvation
+    )
             else:
                 raise ValueError(f"Unknown reward function: {self.reward_fn}")
 

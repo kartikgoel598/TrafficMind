@@ -146,8 +146,7 @@ def train(args):
             agents[junction]._update_target_network()
         print("  Target networks synced ")
 
-    episode_rewards = []
-    episode_losses = []
+    
     if args.resume:
         output_dir = args.resume
     else:
