@@ -45,6 +45,7 @@ class DQNAgent:
         self.optimizer = optim.Adam(self.main_network.parameters(), lr=lr)
         self.criterion = nn.MSELoss()
     
+    # returns an int 
     def select_action(self,state):
         if random.random() < self.epsilon:
             return random.randrange(self.action_size)
