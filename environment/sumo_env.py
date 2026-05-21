@@ -41,6 +41,7 @@ class SumoEnvironment:
         self._phase_time = {j: 0 for j in self.intersections}       # how long the current phase has been green at each intersection
         self._current_phase = {j: 0 for j in self.intersections}    # which phase (0 or 1) each intersection is currently on, 0 means green horizontal, 1 means green vertical
         self._red_time = {j: [0, 0] for j in self.intersections}    # how long has a phase in intersectin been waiting (red)
+        self._yellow_timer = {j: 0 for j in self.intersections}     # how long has it been yellow in an intersection (part of 1.2 critical fix)
 
     def reset(self):
         if traci.isLoaded():
@@ -62,19 +63,33 @@ class SumoEnvironment:
         self._phase_time = {j: 0 for j in self.intersections}
         self._current_phase = {j: 0 for j in self.intersections}
         self._red_time = {j: [0, 0] for j in self.intersections}
+        self._yellow_timer = {j: 0 for j in self.intersections}
         return self._get_state()
     
     # executed every step (for 900 steps)
     '''
-    resolved issues
-    issues  : action is stored to memory even if the sumo does not execute it.
-    fix     : added executed_actions to save if the agent want to switch to memory, even though SUMO cannot execute it (because min-green time) 
+    18/5/2026
+    fix 1    : action is stored to memory even if the sumo does not execute it. Added executed_actions to save if the agent want to switch to memory, 
+               even though SUMO cannot execute it (because min-green time) 
+    21/5/2026
+    fix 2 : 1.2 Critical fix, remove step in _set_yellow and added yellow_state machine here
     '''
     def step(self,actions):
         # track what SUMO actually executed (if agent want to changem, but min_green blocked, then store 0)
         executed_actions = {}
 
         for junction, action in actions.items():
+
+            # yello state machine, id yellow cooldown, keep counting down
+            if self._yellow_timer[junction] > 0:
+                self._yellow_timer[junction] -= 1
+                if self._yellow_timer[junction] == 0:
+                    # yellow finished set to green
+                    traci.trafficlight.setPhase(junction, self._current_phase[junction] * 2)
+                executed_actions[junction] = 0
+                continue
+
+
             self._phase_time[junction] += 1
 
             if self._phase_time[junction] < self.min_green_time:
@@ -83,10 +98,10 @@ class SumoEnvironment:
                 traci.trafficlight.setPhase(junction, self._current_phase[junction] * 2)
                 executed_actions[junction] = 0 # keep
                 continue
-
-
-            if action == 1:
+            
+            if action == 1 and self._phase_time[junction] >= self.min_green_time:
                 self._set_yellow(junction)
+                self._yellow_timer[junction] = self.yellow_duration
                 next_phase = (self._current_phase[junction] + 1) % self.num_phases[junction]
                 self._current_phase[junction]=next_phase
                 self._phase_time[junction] = 0
@@ -115,6 +130,7 @@ class SumoEnvironment:
         return sumo_phase // 2
 
     '''
+    18/5/2026
     fix 1 : restructured so phase and neighbour features are added once per junction, not once per lane. Produces exactly state_size= 11 features.
     fix 2 : during the yellow transition in _set_yellow(), SUMO is on phase 1 or 3 (yellow), but self._current_phase MAY already got updated to the next 
             green phase. so if _get_state() is ever called mid-yellow, Python and SUMO disagree. Added get true phase and adjusted _get_state
@@ -128,9 +144,7 @@ class SumoEnvironment:
         for junction in self.intersections:
             obs = []
 
-            
             # 4 lanes × 2 features = 8 values
-            
             for lane in self.lanes[junction]:
                 queue = traci.lane.getLastStepHaltingNumber(lane)
                 wait = traci.lane.getWaitingTime(lane)/max(1,queue) if queue > 0 else 0.0
@@ -194,6 +208,10 @@ class SumoEnvironment:
             rewards[junction] = reward
         return rewards
 
+    '''
+    21/5/2026
+    fix 1: step yellow should only handle signal logic, NO SIMULATION STEP (self.step += 1). this fixes error 1.2 Critical - One RL transition spans variable numbers of SUMO seconds
+    '''
     def _set_yellow(self, junction):
         # FIX #2: was self.current_phase — fixed to self._current_phase
         # in sumo .net file 
@@ -206,9 +224,6 @@ class SumoEnvironment:
         # so 0 will result in 1 (yellow horizontal) and 1 will result in 3 (yellow vertical)
         yellow_phase = self._current_phase[junction] * 2 + 1
         traci.trafficlight.setPhase(junction, yellow_phase)
-        for _ in range(self.yellow_duration):
-            traci.simulationStep()
-            self._step += 1
 
     def _update_red_time(self): # self._red_time = {j: [0, 0] for j in self.intersections}
         for junction in self.intersections:
