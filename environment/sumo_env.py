@@ -6,6 +6,7 @@ from rewards.local import local_reward
 from rewards.cooperative import cooperative_reward
 from rewards.fairness import fairness_reward
 
+# READY TO TRAIN
 class SumoEnvironment:
     def __init__(self,config_path,reward_fn='local',use_gui=False,seed = 42):
         self.seed = seed
