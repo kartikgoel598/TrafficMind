@@ -160,10 +160,8 @@ class SumoEnvironment:
 
             for lane in self.lanes[junction]:
                 own_queue += traci.lane.getLastStepHaltingNumber(lane)
-                own_wait += traci.lane.getWaitingTime(lane)
+                own_wait += min(traci.lane.getWaitingTime(lane), 300.0)
             
-            alpha = 0.5
-
             if self.reward_fn == 'local':
                 reward = local_reward(own_queue, own_wait)
 

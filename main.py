@@ -257,7 +257,7 @@ def train(args):
     results = {
         'reward_fn': args.reward,
         'scenario': args.scenario,
-        'episodes': args.episodes,
+        'episodes': len(episode_rewards),
         'seed': args.seed,
         'episode_rewards': episode_rewards,
         'episode_losses': episode_losses,
