@@ -73,42 +73,47 @@ class SumoEnvironment:
                even though SUMO cannot execute it (because min-green time) 
     21/5/2026
     fix 2 : 1.2 Critical fix, remove step in _set_yellow and added yellow_state machine here
+    fix 3 : 1.3 Critical fix, make sure to applly all signal changes simultaneously before simulating and phase yellow is removed
     '''
     def step(self,actions):
         # track what SUMO actually executed (if agent want to changem, but min_green blocked, then store 0)
         executed_actions = {}
+        pending_phases = {} # store all phases here
 
         for junction, action in actions.items():
-
-            # yello state machine, id yellow cooldown, keep counting down
+            # yellow state machine, id yellow cooldown, keep counting down
             if self._yellow_timer[junction] > 0:
                 self._yellow_timer[junction] -= 1
                 if self._yellow_timer[junction] == 0:
                     # yellow finished set to green
-                    traci.trafficlight.setPhase(junction, self._current_phase[junction] * 2)
+                    pending_phases[junction] = self._current_phase[junction] * 2
                 executed_actions[junction] = 0
                 continue
-
 
             self._phase_time[junction] += 1
 
             if self._phase_time[junction] < self.min_green_time:
                 # min_green blocked the switch, treat as KEEP even if the agent want to switch
                 # * 2 to follow SUMO phase indexing (0 : green horizontal, 2: green vertical)
-                traci.trafficlight.setPhase(junction, self._current_phase[junction] * 2)
+                pending_phases[junction] = self._current_phase[junction] * 2
                 executed_actions[junction] = 0 # keep
                 continue
             
             if action == 1 and self._phase_time[junction] >= self.min_green_time:
-                self._set_yellow(junction)
+                yellow_phase = self.current_phase[junction] * 2 + 1
+                pending_phases[junction] = yellow_phase
                 self._yellow_timer[junction] = self.yellow_duration
                 next_phase = (self._current_phase[junction] + 1) % self.num_phases[junction]
                 self._current_phase[junction]=next_phase
                 self._phase_time[junction] = 0
                 executed_actions[junction] = 1 # actually changed
             else:
-                traci.trafficlight.setPhase(junction,self._current_phase[junction]*2)
+                pending_phases[junction] = self._current_phase[junction] * 2
                 executed_actions[junction] = 0 # keep
+
+        # apply ALL signal changes simultaneously before simulating
+        for junction, phase in pending_phases.items():
+            traci.trafficlight.setPhase(junction, phase)
 
         traci.simulationStep()
         self._step += 1
@@ -208,22 +213,6 @@ class SumoEnvironment:
             rewards[junction] = reward
         return rewards
 
-    '''
-    21/5/2026
-    fix 1: step yellow should only handle signal logic, NO SIMULATION STEP (self.step += 1). this fixes error 1.2 Critical - One RL transition spans variable numbers of SUMO seconds
-    '''
-    def _set_yellow(self, junction):
-        # FIX #2: was self.current_phase — fixed to self._current_phase
-        # in sumo .net file 
-        # SUMO PHASE INDEX          | MEANING
-        # 0                         | green horizontal
-        # 1                         | yellow horizontal
-        # 2                         | green vertical
-        # 3                         | yellow vertical
-
-        # so 0 will result in 1 (yellow horizontal) and 1 will result in 3 (yellow vertical)
-        yellow_phase = self._current_phase[junction] * 2 + 1
-        traci.trafficlight.setPhase(junction, yellow_phase)
 
     def _update_red_time(self): # self._red_time = {j: [0, 0] for j in self.intersections}
         for junction in self.intersections:
