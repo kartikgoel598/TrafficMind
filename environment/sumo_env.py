@@ -32,7 +32,7 @@ class SumoEnvironment:
             'J4': ['J1', 'J5'],
             'J5': ['J2', 'J4']
         }
-        self.state_size = 12 # added new state from 11 to 12 which is phase_time
+        self.state_size = 13 # added new state from 11 to 12 which is phase_time, 12 to 13 added yellow time
         self.action_size = 2
         self.yellow_duration = 3
         self.min_green_time = 15
@@ -74,6 +74,7 @@ class SumoEnvironment:
     21/5/2026
     fix 2 : 1.2 Critical fix, remove step in _set_yellow and added yellow_state machine here
     fix 3 : 1.3 Critical fix, make sure to applly all signal changes simultaneously before simulating and phase yellow is removed
+    fix 4 : 1.4 High fix, added yellow light phase to state
     '''
     def step(self,actions):
         # track what SUMO actually executed (if agent want to changem, but min_green blocked, then store 0)
@@ -87,6 +88,7 @@ class SumoEnvironment:
                 if self._yellow_timer[junction] == 0:
                     # yellow finished set to green
                     pending_phases[junction] = self._current_phase[junction] * 2
+                    self._phase_time[junction] = 0
                 executed_actions[junction] = 0
                 continue
 
@@ -100,12 +102,11 @@ class SumoEnvironment:
                 continue
             
             if action == 1 and self._phase_time[junction] >= self.min_green_time:
-                yellow_phase = self.current_phase[junction] * 2 + 1
+                yellow_phase = self._current_phase[junction] * 2 + 1
                 pending_phases[junction] = yellow_phase
                 self._yellow_timer[junction] = self.yellow_duration
                 next_phase = (self._current_phase[junction] + 1) % self.num_phases[junction]
                 self._current_phase[junction]=next_phase
-                self._phase_time[junction] = 0
                 executed_actions[junction] = 1 # actually changed
             else:
                 pending_phases[junction] = self._current_phase[junction] * 2
@@ -141,6 +142,9 @@ class SumoEnvironment:
             green phase. so if _get_state() is ever called mid-yellow, Python and SUMO disagree. Added get true phase and adjusted _get_state
     fix 3 : added phase_time to the agent so the agent know whether it is possible to switch. No way to learn "don't bother switching", this helps the model
             learn that its impossible.
+
+    21/5/2026
+    fix 4 : added yellow feature and updated state size to 13
     '''
     # return 12 states of all junction
     def _get_state(self):
@@ -159,9 +163,13 @@ class SumoEnvironment:
             true_phase = self._get_true_phase(junction)
             obs.append(true_phase / max(1, self.num_phases[junction] - 1))
 
-            # phase_time normalised by min_green  — FIX #3
+            # phase_time normalised by min_green  FIX #3
             # value < 1.0 means switching is still blocked, >= 1.0 means switching is allowed
             obs.append(min(self._phase_time[junction] / self.min_green_time, 1.0))
+
+            # fix 4
+            is_yellow = 1.0 if self._yellow_timer[junction] > 0 else 0.0
+            obs.append(is_yellow)
 
 
             for neighbour in self.neighbours[junction]:
