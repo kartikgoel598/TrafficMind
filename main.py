@@ -180,11 +180,8 @@ def train(args):
         done = False
 
         while not done:
-            # shuffle the intersection
-            shuffled = intersections.copy()
-            random.shuffle(shuffled)
             actions = {}
-            for junction in shuffled:
+            for junction in intersections:
                 actions[junction] = agents[junction].select_action(states[junction])
 
             next_states, rewards, done, executed_actions = env.step(actions)
