@@ -211,12 +211,16 @@ class SumoEnvironment:
                     nq = sum(
                         traci.lane.getLastStepHaltingNumber(l)
                         for l in self.lanes[neighbour]
-        )
+                    )
                     neigh_queues.append(nq)
-                max_starvation = max(self._red_time[junction])
+    
+                max_starvation = max(
+                                traci.lane.getWaitingTime(l) 
+                                for l in self.lanes[junction]
+                ) / 300.0
                 reward = fairness_reward(
-        own_queue, own_wait, neigh_queues, max_starvation
-    )
+                        own_queue, own_wait, neigh_queues, max_starvation
+                )
             else:
                 raise ValueError(f"Unknown reward function: {self.reward_fn}")
 
