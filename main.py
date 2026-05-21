@@ -170,7 +170,8 @@ def train(args):
 
     start = args.start_episode if args.resume else 1
     for episode in range(start, args.episodes + 1):
-
+        env.seed = random.randint(0, 9999)
+        
         states = env.reset()
         phase_changes = {j: 0 for j in intersections}
         prev_phases = {j: env._current_phase[j] for j in intersections}
