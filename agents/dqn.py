@@ -47,6 +47,12 @@ class DQNAgent:
     
     # returns an int 
     def select_action(self,state):
+        phase_time = state[9]   # normalised, < 1.0 means switching blocked
+        is_yellow = state[10]   # 1.0 if yellow, 0.0 if not
+
+        if is_yellow == 1.0 or phase_time < 1.0:
+            return 0  # force keep, switching is illegal
+            
         if random.random() < self.epsilon:
             return random.randrange(self.action_size)
         

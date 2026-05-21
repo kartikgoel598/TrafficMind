@@ -58,7 +58,9 @@ class SumoEnvironment:
 
         if not os.path.isfile(sumo_binary):
             raise FileNotFoundError(f"SUMO binary not found: {sumo_binary}")
+
         traci.start([sumo_binary, '-c', self.config_path, '--no-warnings', f'--seed={self.seed}'])
+        traci.simulationStep()
         self._step = 0
         self._phase_time = {j: 0 for j in self.intersections}
         self._current_phase = {j: 0 for j in self.intersections}
