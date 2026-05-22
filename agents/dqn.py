@@ -47,6 +47,12 @@ class DQNAgent:
     
     # returns an int 
     def select_action(self,state):
+        phase_time = state[9]   # normalised, < 1.0 means switching blocked
+        is_yellow = state[10]   # 1.0 if yellow, 0.0 if not
+
+        if is_yellow == 1.0 or phase_time < 1.0:
+            return 0  # force keep, switching is illegal
+
         if random.random() < self.epsilon:
             return random.randrange(self.action_size)
         
@@ -67,8 +73,16 @@ class DQNAgent:
         current_q = self.main_network(states).gather(
             1, actions.unsqueeze(1)
         ).squeeze(1)
+
         with torch.no_grad():
-            next_q = self.target_network(next_states).max(1)[0]
+            next_q_all = self.target_network(next_states).clone()  # shape [batch, 2]
+            # mask illegal actions, phase_time is index 9, is_yellow is index 10
+            phase_time = next_states[:, 9]   # normalised, <1.0 means blocked
+            is_yellow  = next_states[:, 10]  # 1.0 if yellow
+            illegal    = (phase_time < 1.0) | (is_yellow == 1.0)
+            next_q_all[:, 1][illegal] = -float('inf')  # mask switch action
+            next_q     = next_q_all.max(1)[0]
+
         target_q = rewards + self.gamma * next_q * (1-dones)
         loss = self.criterion(current_q, target_q)
         self.optimizer.zero_grad()
