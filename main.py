@@ -168,6 +168,12 @@ def train(args):
             episode_losses  = old_results.get('episode_losses', [])
             print(f"  old {len(episode_rewards)} episodes load")
 
+            # added warning if user forgot to add --start_episode
+            actual_episodes = len(episode_rewards)
+            if args.start_episode - 1 != actual_episodes:
+                print(f"  WARNING: --start_episode {args.start_episode} doesn't match "
+                    f"checkpoint history ({actual_episodes} episodes completed)")
+
     start = args.start_episode if args.resume else 1
     for episode in range(start, args.episodes + 1):
         env.seed = random.randint(0, 9999)
