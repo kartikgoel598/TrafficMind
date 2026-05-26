@@ -111,6 +111,8 @@ def train(args):
         seed=args.seed
     )
 
+    # highen the learning starts 
+    LEARNING_STARTS = 5000
     intersections = ['J1', 'J2', 'J4', 'J5']
 
     agents = {}
@@ -124,8 +126,8 @@ def train(args):
             gamma=0.99,
             epsilon=1.0,
             epsilon_min=0.01,
-            epsilon_decay=0.990,
-            target_update_freq=50
+            epsilon_decay=0.99995,
+            target_update_freq=500
         )
         buffers[junction] = ReplayBuffer(capacity=100000)
     
@@ -138,7 +140,8 @@ def train(args):
                 print(f"  Loaded model for {junction} from {model_path}")
             else:
                 print(f"  Warning: Model file not found for {junction} at {model_path}")
-        resumed_epsilon = max(0.01, 1.0 * (0.990 ** (args.start_episode)))
+        steps_completed = args.start_episode * 900  # approximate
+        resumed_epsilon = max(0.01, 1.0 * (0.99995 ** steps_completed))
         for junction in intersections:
             agents[junction].epsilon = resumed_epsilon
         print(f'epsilon set to : {resumed_epsilon:.3f}')
@@ -204,11 +207,16 @@ def train(args):
                 total_rewards[junction] += rewards[junction]
 
             for junction in intersections:
-                loss = agents[junction].train_step(
-                    buffers[junction], batch_size=128
-                )
-                if loss is not None:
-                    total_losses.append(loss)
+                if len(buffers[junction]) >= LEARNING_STARTS:
+                    loss = agents[junction].train_step(
+                        buffers[junction], batch_size=128
+                    )
+
+                    if loss is not None:
+                        total_losses.append(loss)
+
+            for junction in intersections:
+                agents[junction].decay_epsilon()
 
             states = next_states
             step_count += 1
@@ -218,8 +226,8 @@ def train(args):
                     phase_changes[junction] += 1
                 prev_phases[junction] = env._current_phase[junction]
 
-        for junction in intersections:
-            agents[junction].decay_epsilon()
+            
+
 
         avg_reward = np.mean(list(total_rewards.values()))
         avg_loss = np.mean(total_losses) if total_losses else 0.0
