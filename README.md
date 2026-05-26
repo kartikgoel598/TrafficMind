@@ -102,11 +102,12 @@ Sumo_Home=D:\sumo\sumo-win64-1.26.0\sumo-1.26.0
 Used run by developer
 ```bash
 python main.py --reward local --scenario peak --episodes 300
-python main.py --reward cooperative --scenario peak --episodes 300
+python main.py --reward cooperative --scenario off_peak --episodes 200
 python main.py --reward fairness --scenario peak --episodes 300
 
 python main.py --reward local --scenario peak --episodes 700 --resume outputs/local_peak_TIMESTAMP --start_episode 301
 python main.py --reward cooperative --scenario peak --episodes 500 --resume outputs/cooperative_peak_20260522_135204 --start_episode 301
+python main.py --reward cooperative --scenario off_peak --episodes 300 --resume outputs/cooperative_off_peak_20260525_160322 --start_episode 201
 
 python main.py --reward cooperative --scenario peak --episodes 700 --resume outputs/cooperative_peak_20260522_135204 --start_episode 501
 python main.py --reward fairness --scenario peak --episodes 700 --resume outputs/fairness_peak_TIMESTAMP --start_episode 301
