@@ -21,7 +21,7 @@ class DQNAgent:
     def __init__(self, state_size, action_size,
                  lr=0.001, gamma=0.99,
                  epsilon=1.0, epsilon_min=0.01,
-                 epsilon_decay=0.995,
+                 epsilon_decay=0.999991,
                  target_update_freq=500):
         
         self.state_size  = state_size

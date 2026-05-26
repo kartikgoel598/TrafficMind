@@ -126,7 +126,7 @@ def train(args):
             gamma=0.99,
             epsilon=1.0,
             epsilon_min=0.01,
-            epsilon_decay=0.99995,
+            epsilon_decay=0.999991,
             target_update_freq=500
         )
         buffers[junction] = ReplayBuffer(capacity=100000)
@@ -215,8 +215,9 @@ def train(args):
                     if loss is not None:
                         total_losses.append(loss)
 
+            new_epsilon = max(0.01, agents['J1'].epsilon * 0.999991)
             for junction in intersections:
-                agents[junction].decay_epsilon()
+                agents[junction].epsilon = new_epsilon
 
             states = next_states
             step_count += 1
