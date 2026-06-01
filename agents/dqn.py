@@ -104,13 +104,35 @@ class DQNAgent:
             self.main_network.state_dict()
         )
     def save(self, path):
-        
-        torch.save(self.main_network.state_dict(), path)
+        # Save full training state so resume continues with consistent targets,
+        # optimizer momentum, epsilon, and update counters.
+        payload = {
+            'model_state_dict': self.main_network.state_dict(),
+            'target_state_dict': self.target_network.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
+            'epsilon': self.epsilon,
+            'steps_done': self.steps_done,
+            'state_size': self.state_size,
+            'action_size': self.action_size,
+        }
+        torch.save(payload, path)
 
     def load(self, path):
-       
-        self.main_network.load_state_dict(
-            torch.load(path, map_location=self.device)
-        )
+        checkpoint = torch.load(path, map_location=self.device)
+
+        # Backward compatibility: old checkpoints may only store model weights.
+        if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
+            self.main_network.load_state_dict(checkpoint['model_state_dict'])
+            if 'target_state_dict' in checkpoint:
+                self.target_network.load_state_dict(checkpoint['target_state_dict'])
+            else:
+                self._update_target_network()
+            if 'optimizer_state_dict' in checkpoint:
+                self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            self.epsilon = float(checkpoint.get('epsilon', self.epsilon))
+            self.steps_done = int(checkpoint.get('steps_done', self.steps_done))
+        else:
+            self.main_network.load_state_dict(checkpoint)
+            self._update_target_network()
 
 

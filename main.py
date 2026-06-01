@@ -69,6 +69,23 @@ def parse_args():
         default=1,
         help='Episode to start training from (default: 1)'
     )
+    parser.add_argument(
+        '--batch_size',
+        type=int,
+        default=128,
+        help='Replay sample batch size (default: 128)'
+    )
+    parser.add_argument(
+        '--replay_warmup',
+        type=int,
+        default=1000,
+        help='Minimum transitions per agent before training starts'
+    )
+    parser.add_argument(
+        '--randomize_episode_seed',
+        action='store_true',
+        help='Use fully random SUMO seed per episode (higher variance)'
+    )
 
     return parser.parse_args()
 
@@ -98,6 +115,8 @@ def train(args):
     print(f"  Scenario : {args.scenario}")
     print(f"  Episodes : {args.episodes}")
     print(f"  Seed     : {args.seed}")
+    print(f"  Batch    : {args.batch_size}")
+    print(f"  Warmup   : {args.replay_warmup}")
     print("=" * 60)
 
     set_seed(args.seed)
@@ -158,14 +177,20 @@ def train(args):
     os.makedirs(output_dir, exist_ok=True)
 
     episode_rewards = []
+    episode_rewards_per_step = []
     episode_losses = []
+    episode_kpis = []
+    episode_indices = []
     if args.resume:
         old_path = os.path.join(args.resume, 'results.json')
         if os.path.exists(old_path):
             with open(old_path, 'r') as f:
                 old_results = json.load(f)
             episode_rewards = old_results.get('episode_rewards', [])
+            episode_rewards_per_step = old_results.get('episode_rewards_per_step', [])
             episode_losses  = old_results.get('episode_losses', [])
+            episode_kpis = old_results.get('episode_kpis', [])
+            episode_indices = old_results.get('episode_indices', list(range(1, len(episode_rewards) + 1)))
             print(f"  old {len(episode_rewards)} episodes load")
 
             # added warning if user forgot to add --start_episode
@@ -176,13 +201,25 @@ def train(args):
 
     start = args.start_episode if args.resume else 1
     for episode in range(start, args.episodes + 1):
-        env.seed = random.randint(0, 9999)
+        # Fix: deterministic-by-default episode seed for lower training variance.
+        if args.randomize_episode_seed:
+            env.seed = random.randint(0, 9999)
+        else:
+            env.seed = args.seed + episode
         
         states = env.reset()
         phase_changes = {j: 0 for j in intersections}
         prev_phases = {j: env._current_phase[j] for j in intersections}
         total_rewards = {j: 0.0 for j in intersections}
         total_losses = []
+        total_switches = {j: 0 for j in intersections}
+        kpi_sum = {
+            'mean_waiting_time': 0.0,
+            'total_waiting_time': 0.0,
+            'mean_queue_length': 0.0,
+            'max_lane_wait': 0.0,
+            'throughput': 0,
+        }
         step_count = 0
         done = False
 
@@ -196,22 +233,30 @@ def train(args):
             for junction in intersections:
                 buffers[junction].push(
                     state=states[junction],
-                    action=executed_actions[junction], # change to actually executed action in SUMO to memory (buffer)
+                    action=executed_actions[junction], # store executed SUMO action
                     reward=rewards[junction],
                     next_state=next_states[junction],
                     done=float(done)
                 )
                 total_rewards[junction] += rewards[junction]
+                total_switches[junction] += int(executed_actions[junction] == 1)
 
             for junction in intersections:
-                loss = agents[junction].train_step(
-                    buffers[junction], batch_size=128
-                )
+                # Fix: warmup replay before updates to reduce unstable early Q-targets.
+                if len(buffers[junction]) < args.replay_warmup:
+                    continue
+                loss = agents[junction].train_step(buffers[junction], batch_size=args.batch_size)
                 if loss is not None:
                     total_losses.append(loss)
 
             states = next_states
             step_count += 1
+            step_kpis = env.get_kpis()
+            kpi_sum['mean_waiting_time'] += step_kpis['mean_waiting_time']
+            kpi_sum['total_waiting_time'] += step_kpis['total_waiting_time']
+            kpi_sum['mean_queue_length'] += step_kpis['mean_queue_length']
+            kpi_sum['max_lane_wait'] = max(kpi_sum['max_lane_wait'], step_kpis['max_lane_wait'])
+            kpi_sum['throughput'] += step_kpis['throughput_step']
 
             for junction in intersections:
                 if env._current_phase[junction] != prev_phases[junction]:
@@ -222,10 +267,28 @@ def train(args):
             agents[junction].decay_epsilon()
 
         avg_reward = np.mean(list(total_rewards.values()))
+        # Fix: this is the primary learning curve to compare runs fairly.
+        avg_reward_per_step = np.mean(
+            [total_rewards[j] / max(step_count, 1) for j in intersections]
+        )
         avg_loss = np.mean(total_losses) if total_losses else 0.0
+        episode_kpi = {
+            'mean_waiting_time': kpi_sum['mean_waiting_time'] / max(step_count, 1),
+            'total_waiting_time': kpi_sum['total_waiting_time'] / max(step_count, 1),
+            'mean_queue_length': kpi_sum['mean_queue_length'] / max(step_count, 1),
+            'max_lane_wait': kpi_sum['max_lane_wait'],
+            'throughput': kpi_sum['throughput'],
+            'step_count': step_count,
+            'switch_count_total': int(sum(total_switches.values())),
+            'switch_count_by_junction': total_switches,
+            'phase_changes_by_junction': phase_changes,
+        }
 
         episode_rewards.append(avg_reward)
+        episode_rewards_per_step.append(avg_reward_per_step)
         episode_losses.append(avg_loss)
+        episode_kpis.append(episode_kpi)
+        episode_indices.append(episode)
 
         current_epsilon = agents['J1'].epsilon
 
@@ -233,9 +296,12 @@ def train(args):
             print(
                 f"Episode {episode:4d}/{args.episodes} | "
                 f"Reward: {avg_reward:8.2f} | "
+                f"R/Step: {avg_reward_per_step:8.4f} | "
                 f"Loss: {avg_loss:7.4f} | "
                 f"Epsilon: {current_epsilon:.3f} | "
-                f"Steps: {step_count}"
+                f"Steps: {step_count} | "
+                f"Wait: {episode_kpi['mean_waiting_time']:.2f} | "
+                f"Thrpt: {episode_kpi['throughput']}"
             )
             
 
@@ -263,8 +329,14 @@ def train(args):
         'scenario': args.scenario,
         'episodes': len(episode_rewards),
         'seed': args.seed,
+        'batch_size': args.batch_size,
+        'replay_warmup': args.replay_warmup,
+        'randomize_episode_seed': args.randomize_episode_seed,
+        'episode_indices': episode_indices,
         'episode_rewards': episode_rewards,
+        'episode_rewards_per_step': episode_rewards_per_step,
         'episode_losses': episode_losses,
+        'episode_kpis': episode_kpis,
     }
 
     results_path = os.path.join(output_dir, 'results.json')
