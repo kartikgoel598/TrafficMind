@@ -34,6 +34,8 @@ class DQNAgent:
         self.epsilon_decay = epsilon_decay
         self.target_update_freq = target_update_freq
         self.steps_done = 0
+        # just to make sure its using GPU
+        print(f"Building DQN Agent... using {'GPU' if torch.cuda.is_available() else 'CPU'} (this should print 4 times)")
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         self.main_network = QNetwork(state_size, action_size).to(self.device)
@@ -56,6 +58,7 @@ class DQNAgent:
         if random.random() < self.epsilon:
             return random.randrange(self.action_size)
         
+        # expected future return if I take action a in state s
         state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
         with torch.no_grad():
             q_values = self.main_network(state_tensor)

@@ -7,6 +7,8 @@ import json
 from datetime import datetime
 import sys
 
+
+
 from dotenv import load_dotenv
 load_dotenv()  # loads Sumo_Home from .env before anything else runs
 sys.path.append(os.path.join(os.getenv('Sumo_Home'), "tools"))
@@ -17,7 +19,7 @@ from agents.replay_buffer import ReplayBuffer
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='TrafficMind — DQN Traffic Signal Control'
+        description='TrafficMind - DQN Traffic Signal Control'
     )
 
     parser.add_argument(
@@ -126,7 +128,7 @@ def train(args):
             gamma=0.99,
             epsilon=1.0,
             epsilon_min=0.01,
-            epsilon_decay=0.999991,
+            epsilon_decay=0.999995,
             target_update_freq=500
         )
         buffers[junction] = ReplayBuffer(capacity=100000)
@@ -178,6 +180,8 @@ def train(args):
                     f"checkpoint history ({actual_episodes} episodes completed)")
 
     start = args.start_episode if args.resume else 1
+
+     # the actual training
     for episode in range(start, args.episodes + 1):
         env.seed = random.randint(0, 9999)
         
@@ -189,12 +193,14 @@ def train(args):
         step_count = 0
         done = False
 
+
         while not done:
             actions = {}
             for junction in intersections:
                 actions[junction] = agents[junction].select_action(states[junction])
 
             next_states, rewards, done, executed_actions = env.step(actions)
+
 
             for junction in intersections:
                 buffers[junction].push(
@@ -206,16 +212,18 @@ def train(args):
                 )
                 total_rewards[junction] += rewards[junction]
 
-            for junction in intersections:
-                if len(buffers[junction]) >= LEARNING_STARTS:
-                    loss = agents[junction].train_step(
-                        buffers[junction], batch_size=128
-                    )
+            if step_count % 4 == 0:
+                for junction in intersections:
+                    if len(buffers[junction]) >= LEARNING_STARTS:
+                        loss = agents[junction].train_step(
+                            buffers[junction], batch_size=128
+                        )
 
-                    if loss is not None:
-                        total_losses.append(loss)
+                        if loss is not None:
+                            total_losses.append(loss)
 
-            new_epsilon = max(0.01, agents['J1'].epsilon * 0.999991)
+
+            new_epsilon = max(0.01, agents['J1'].epsilon * agents['J1'].epsilon_decay)
             for junction in intersections:
                 agents[junction].epsilon = new_epsilon
 
@@ -227,7 +235,6 @@ def train(args):
                     phase_changes[junction] += 1
                 prev_phases[junction] = env._current_phase[junction]
 
-            
 
 
         avg_reward = np.mean(list(total_rewards.values()))
@@ -238,7 +245,8 @@ def train(args):
 
         current_epsilon = agents['J1'].epsilon
 
-        if episode % 10 == 0:
+        # temporary change to see difference
+        if episode % 1 == 0:
             print(
                 f"Episode {episode:4d}/{args.episodes} | "
                 f"Reward: {avg_reward:8.2f} | "
