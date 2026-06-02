@@ -159,7 +159,7 @@ def get_kpis(tracker: Dict) -> Dict[str, float]:
         "total_waiting_time": tracker["total_waiting_time"],
         "mean_queue_length": tracker["total_queue"] / lane_steps,
         "max_lane_wait": tracker["max_lane_wait"],
-        "throughput": float(tracker["throughput"]),,
+        "throughput": float(tracker["throughput"]),
         "switch_count_total": float(tracker["switch_count"]),
         "mean_reward_per_step": tracker["reward_sum"] / steps,
     }
