@@ -33,12 +33,27 @@ KPI_NAMES = [
     "mean_reward_per_step",
 ]
  
-# Phase 0 = horizontal green (lanes 0 & 3); phase 1 = vertical (lanes 1 & 2).
-PHASE_LANE_GROUPS = {
-    0: (0, 3),
-    1: (1, 2),
-}
- 
+def get_current_green_lanes(env: SumoEnvironment, junction: str) -> set:
+    """
+    Return the incoming lanes that currently have green signal at this junction.
+    This uses SUMO's actual traffic light state instead of hard-coded lane indices.
+    """
+    green_lanes = set()
+
+    signal_state = traci.trafficlight.getRedYellowGreenState(junction)
+    controlled_links = traci.trafficlight.getControlledLinks(junction)
+
+    for signal_index, signal_char in enumerate(signal_state):
+        if signal_char not in ("g", "G"):
+            continue
+
+        for link in controlled_links[signal_index]:
+            incoming_lane = link[0]
+
+            if incoming_lane in env.lanes[junction]:
+                green_lanes.add(incoming_lane)
+
+    return green_lanes
  
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -206,20 +221,26 @@ def greedy_queue_action(
 ) -> int:
     if not is_switch_legal(state):
         return 0
- 
-    true_phase = env._get_true_phase(junction)
-    current_lanes = PHASE_LANE_GROUPS[true_phase]
-    opposite_lanes = PHASE_LANE_GROUPS[1 - true_phase]
-    lanes = env.lanes[junction]
- 
+
+    green_lanes = get_current_green_lanes(env, junction)
+
+    if not green_lanes:
+        return 0
+
+    all_lanes = set(env.lanes[junction])
+    red_lanes = all_lanes - green_lanes
+
     current_q = sum(
-        traci.lane.getLastStepHaltingNumber(lanes[i]) for i in current_lanes
+        traci.lane.getLastStepHaltingNumber(lane)
+        for lane in green_lanes
     )
+
     opposite_q = sum(
-        traci.lane.getLastStepHaltingNumber(lanes[i]) for i in opposite_lanes
+        traci.lane.getLastStepHaltingNumber(lane)
+        for lane in red_lanes
     )
+
     return 1 if opposite_q > current_q else 0
- 
  
 def make_policy_fn(
     policy_name: str,
