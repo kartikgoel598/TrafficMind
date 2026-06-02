@@ -231,12 +231,45 @@ class SumoEnvironment:
 
     def _update_red_time(self): # self._red_time = {j: [0, 0] for j in self.intersections}
         for junction in self.intersections:
-            current = self._current_phase[junction]
+            # Use SUMO true phase so red-time accounting stays correct in yellow.
+            current = self._get_true_phase(junction)
             for phase_idx in range(len(self._red_time[junction])):
                 if phase_idx == current:
                     self._red_time[junction][phase_idx] = 0
                 else:
                     self._red_time[junction][phase_idx] += 1
+
+    def get_kpis(self):
+        # KPI snapshot for logging/evaluation at each control step.
+        lane_queue_total = 0.0
+        lane_wait_total = 0.0
+        max_lane_wait = 0.0
+        lane_count = 0
+
+        for junction in self.intersections:
+            for lane in self.lanes[junction]:
+                q = float(traci.lane.getLastStepHaltingNumber(lane))
+                w = float(traci.lane.getWaitingTime(lane))
+                lane_queue_total += q
+                lane_wait_total += w
+                max_lane_wait = max(max_lane_wait, w)
+                lane_count += 1
+
+        vehicles = traci.vehicle.getIDList()
+        if vehicles:
+            vehicle_wait = [traci.vehicle.getWaitingTime(vid) for vid in vehicles]
+            mean_wait = float(np.mean(vehicle_wait))
+        else:
+            mean_wait = 0.0
+
+        return {
+            'mean_waiting_time': mean_wait,
+            'total_waiting_time': lane_wait_total,
+            'mean_queue_length': lane_queue_total / max(1, lane_count),
+            'max_lane_wait': max_lane_wait,
+            'throughput_step': int(traci.simulation.getArrivedNumber()),
+            'sim_time': float(traci.simulation.getTime()),
+        }
 
     def _is_done(self):
         no_vehicles  = traci.simulation.getMinExpectedNumber() == 0
