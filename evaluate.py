@@ -31,6 +31,7 @@ KPI_NAMES = [
     "throughput",
     "switch_count_total",
     "mean_reward_per_step",
+    "step_count",
 ]
  
 def get_current_green_lanes(env: SumoEnvironment, junction: str) -> set:
@@ -118,10 +119,9 @@ def set_seed(seed: int) -> None:
  
  
 def is_switch_legal(state: np.ndarray) -> bool:
-    """Match action masking in DQNAgent.select_action."""
     phase_time = state[9]
     is_yellow = state[10]
-    return is_yellow == 0.0 and phase_time >= 1.0
+    return is_yellow < 0.5 and phase_time >= 1.0
  
  
 def new_kpi_tracker(env: SumoEnvironment) -> Dict:
@@ -177,6 +177,7 @@ def get_kpis(tracker: Dict) -> Dict[str, float]:
         "throughput": float(tracker["throughput"]),
         "switch_count_total": float(tracker["switch_count"]),
         "mean_reward_per_step": tracker["reward_sum"] / steps,
+        "step_count": float(tracker["step_count"]),
     }
  
  
@@ -194,7 +195,7 @@ def load_agents(env: SumoEnvironment, models_dir: str) -> Dict[str, DQNAgent]:
             epsilon=0.0,
             epsilon_min=0.0,
             epsilon_decay=1.0,
-            target_update_freq=50,
+            target_update_freq=500,
         )
         agent.load(path)
         agent.epsilon = 0.0
@@ -385,6 +386,9 @@ def main():
     results = evaluate(args)
  
     output_path = args.output
+    output_dir = os.path.dirname(output_path)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
  

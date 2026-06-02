@@ -144,7 +144,7 @@ def train(args):
             epsilon=1.0,
             epsilon_min=0.01,
             epsilon_decay=0.990,
-            target_update_freq=50
+            target_update_freq=500
         )
         buffers[junction] = ReplayBuffer(capacity=100000)
     
@@ -157,13 +157,8 @@ def train(args):
                 print(f"  Loaded model for {junction} from {model_path}")
             else:
                 print(f"  Warning: Model file not found for {junction} at {model_path}")
-        resumed_epsilon = max(0.01, 1.0 * (0.990 ** (args.start_episode)))
-        for junction in intersections:
-            agents[junction].epsilon = resumed_epsilon
-        print(f'epsilon set to : {resumed_epsilon:.3f}')
-        for junction in intersections:
-            agents[junction]._update_target_network()
-        print("Target networks synced")
+        print(f'loaded epsilon from checkpoint: {agents[;J1].epsilon:.3f}')
+        print('target networks loaded from checkpoint')
 
     
     if args.resume:
@@ -172,7 +167,7 @@ def train(args):
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         output_dir = os.path.join(
             'outputs',
-            f"{args.reward}_{args.scenario}_{timestamp}"
+            f"{args.reward}_{args.scenario}_tu500_lr0005_{timestamp}"
             )
     os.makedirs(output_dir, exist_ok=True)
 
@@ -213,6 +208,10 @@ def train(args):
         total_rewards = {j: 0.0 for j in intersections}
         total_losses = []
         total_switches = {j: 0 for j in intersections}
+        legal_switch_opportunities = {j: 0 for j in intersections}
+        switch_when_legal = {j: 0 for j in intersections}
+        keep_when_legal = {j: 0 for j in intersections}
+        illegal_switch_requests = {j: 0 for j in intersections}
         kpi_sum = {
             'mean_waiting_time': 0.0,
             'total_waiting_time': 0.0,
@@ -227,6 +226,19 @@ def train(args):
             actions = {}
             for junction in intersections:
                 actions[junction] = agents[junction].select_action(states[junction])
+            for junction in intersections:
+                phase_time_ready = env._phase_time[junction] >= env.min_green_time
+                not_yellow = env._yellow_timer[junction] ==0
+                switch_legal = phase_time_ready and not_yellow
+                if switch_legal:
+                    legal_switch_opportunities[junction] += 1
+                    if actions[junction] == 1:
+                        switch_when_legal[junction] += 1
+                    else:
+                        keep_when_legal[junction] += 1
+                else:
+                    if actions[junction] == 1:
+                        illegal_switch_requests[junction] += 1
 
             next_states, rewards, done, executed_actions = env.step(actions)
 
@@ -271,7 +283,7 @@ def train(args):
         avg_reward_per_step = np.mean(
             [total_rewards[j] / max(step_count, 1) for j in intersections]
         )
-        avg_loss = np.mean(total_losses) if total_losses else 0.0
+        avg_loss = float(np.mean(total_losses)) if total_losses else None
         episode_kpi = {
             'mean_waiting_time': kpi_sum['mean_waiting_time'] / max(step_count, 1),
             'total_waiting_time': kpi_sum['total_waiting_time'] / max(step_count, 1),
@@ -282,6 +294,11 @@ def train(args):
             'switch_count_total': int(sum(total_switches.values())),
             'switch_count_by_junction': total_switches,
             'phase_changes_by_junction': phase_changes,
+            'legal_switch_opportunities': legal_switch_opportunities,
+            'switch_when_legal': switch_when_legal,
+            'keep_when_legal': keep_when_legal,
+            'illegal_switch_requests': illegal_switch_requests,
+
         }
 
         episode_rewards.append(avg_reward)

@@ -43,7 +43,7 @@ class DQNAgent:
         self.target_network.load_state_dict(self.main_network.state_dict())
         self.target_network.eval()
         self.optimizer = optim.Adam(self.main_network.parameters(), lr=lr)
-        self.criterion = nn.MSELoss()
+        self.criterion = nn.SmoothL1Loss()
     
     # returns an int 
     def select_action(self,state):
@@ -75,13 +75,15 @@ class DQNAgent:
         ).squeeze(1)
 
         with torch.no_grad():
-            next_q_all = self.target_network(next_states).clone()  # shape [batch, 2]
-            # mask illegal actions, phase_time is index 9, is_yellow is index 10
+            next_q_main = self.main_network(next_states).clone()
+            next_q_target = self.target_network(next_states).clone()
             phase_time = next_states[:, 9]   # normalised, <1.0 means blocked
             is_yellow  = next_states[:, 10]  # 1.0 if yellow
             illegal    = (phase_time < 1.0) | (is_yellow == 1.0)
-            next_q_all[:, 1][illegal] = -float('inf')  # mask switch action
-            next_q     = next_q_all.max(1)[0]
+            next_q_main[:, 1][illegal] = -float('inf')
+            next_actions = next_q_main.argmax(dim =1)
+            next_q = next_q_target.gather(1,next_actions.unsqueeze(1)).squeeze(1)
+            
 
         target_q = rewards + self.gamma * next_q * (1-dones)
         loss = self.criterion(current_q, target_q)
