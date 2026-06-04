@@ -21,36 +21,36 @@
     <route id="north_right_to_west" edges="E10 -E1 -E0"/>
     <route id="east_to_south_right" edges="-E2 -E5 E11"/>
 
-    <!-- OFF-PEAK FLOWS: 0 to 3600 sec, ~600 veh/hr total -->
+    <!-- OFF-PEAK FLOWS: 0 to 900 sec, ~600 veh/hr total -->
 
     <!-- Horizontal — 80 veh/hr each -->
     <flow id="we_top" type="car" route="west_east_top"
-          begin="0" end="3600" vehsPerHour="80" departLane="0" departSpeed="max"/>
+          begin="0" end="900" vehsPerHour="80" departLane="0" departSpeed="max"/>
     <flow id="ew_top" type="car" route="east_west_top"
-          begin="0" end="3600" vehsPerHour="80" departLane="0" departSpeed="max"/>
+          begin="0" end="900" vehsPerHour="80" departLane="0" departSpeed="max"/>
     <flow id="we_bot" type="car" route="west_east_bot"
-          begin="0" end="3600" vehsPerHour="80" departLane="0" departSpeed="max"/>
+          begin="0" end="900" vehsPerHour="80" departLane="0" departSpeed="max"/>
     <flow id="ew_bot" type="car" route="east_west_bot"
-          begin="0" end="3600" vehsPerHour="80" departLane="0" departSpeed="max"/>
+          begin="0" end="900" vehsPerHour="80" departLane="0" departSpeed="max"/>
 
     <!-- Vertical — 60 veh/hr each -->
     <flow id="ns_left"  type="car" route="north_south_left"
-          begin="0" end="3600" vehsPerHour="60" departLane="0" departSpeed="max"/>
+          begin="0" end="900" vehsPerHour="60" departLane="0" departSpeed="max"/>
     <flow id="sn_left"  type="car" route="south_north_left"
-          begin="0" end="3600" vehsPerHour="60" departLane="0" departSpeed="max"/>
+          begin="0" end="900" vehsPerHour="60" departLane="0" departSpeed="max"/>
     <flow id="ns_right" type="car" route="north_south_right"
-          begin="0" end="3600" vehsPerHour="60" departLane="0" departSpeed="max"/>
+          begin="0" end="900" vehsPerHour="60" departLane="0" departSpeed="max"/>
     <flow id="sn_right" type="car" route="south_north_right"
-          begin="0" end="3600" vehsPerHour="60" departLane="0" departSpeed="max"/>
+          begin="0" end="900" vehsPerHour="60" departLane="0" departSpeed="max"/>
 
     <!-- Turning — 10 veh/hr each -->
     <flow id="nl_east"  type="car" route="north_left_to_east"
-          begin="0" end="3600" vehsPerHour="10" departLane="0" departSpeed="max"/>
+          begin="0" end="900" vehsPerHour="10" departLane="0" departSpeed="max"/>
     <flow id="w_sleft"  type="car" route="west_to_south_left"
-          begin="0" end="3600" vehsPerHour="10" departLane="0" departSpeed="max"/>
+          begin="0" end="900" vehsPerHour="10" departLane="0" departSpeed="max"/>
     <flow id="nr_west"  type="car" route="north_right_to_west"
-          begin="0" end="3600" vehsPerHour="10" departLane="0" departSpeed="max"/>
+          begin="0" end="900" vehsPerHour="10" departLane="0" departSpeed="max"/>
     <flow id="e_sright" type="car" route="east_to_south_right"
-          begin="0" end="3600" vehsPerHour="10" departLane="0" departSpeed="max"/>
+          begin="0" end="900" vehsPerHour="10" departLane="0" departSpeed="max"/>
 
 </routes>

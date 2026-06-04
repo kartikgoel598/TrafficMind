@@ -94,6 +94,12 @@ def get_config_path(scenario):
 
 
 def train(args):
+    print(f"CUDA available: {torch.cuda.is_available()}")
+    if torch.cuda.is_available():
+        print(f"GPU: {torch.cuda.get_device_name(0)}")
+        print(f"Memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
+
+
     print("=" * 60)
     print(f"  TrafficMind Training started!")
     print(f"  Reward   : {args.reward}")
@@ -143,7 +149,7 @@ def train(args):
             else:
                 print(f"  Warning: Model file not found for {junction} at {model_path}")
         steps_completed = args.start_episode * 900  # approximate
-        resumed_epsilon = max(0.01, 1.0 * (0.99995 ** steps_completed))
+        resumed_epsilon = max(0.01, 1.0 * (0.999995 ** steps_completed))
         for junction in intersections:
             agents[junction].epsilon = resumed_epsilon
         print(f'epsilon set to : {resumed_epsilon:.3f}')

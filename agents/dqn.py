@@ -37,7 +37,6 @@ class DQNAgent:
         # just to make sure its using GPU
         print(f"Building DQN Agent... using {'GPU' if torch.cuda.is_available() else 'CPU'} (this should print 4 times)")
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
         self.main_network = QNetwork(state_size, action_size).to(self.device)
 
         self.target_network = QNetwork(state_size, action_size).to(self.device)
@@ -97,11 +96,6 @@ class DQNAgent:
             self._update_target_network()
         return loss.item()
     
-    def decay_epsilon(self):
-        self.epsilon = max(
-            self.epsilon_min,
-            self.epsilon * self.epsilon_decay
-        )
     def _update_target_network(self):
          self.target_network.load_state_dict(
             self.main_network.state_dict()
