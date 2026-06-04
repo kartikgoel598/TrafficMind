@@ -9,7 +9,7 @@ sys.path.append(os.path.join(os.getenv('Sumo_Home'), "tools"))
 from environment.sumo_env import SumoEnvironment
 from agents.dqn import DQNAgent
 
-CHECKPOINT_DIR = 'outputs/cooperative_peak_20260602_170004'  
+CHECKPOINT_DIR = 'outputs/local_peak_20260602_142746'  
 intersections = ['J1', 'J2', 'J4', 'J5']
 
 env = SumoEnvironment(

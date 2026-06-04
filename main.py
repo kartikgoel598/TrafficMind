@@ -65,14 +65,14 @@ def parse_args():
         help='Path to a checkpoint to resume training'
     )
 
-    parser.add_argument(
-        '--start_episode',
-        type=int,
-        default=1,
-        help='Episode to start training from (default: 1)'
-    )
-
     return parser.parse_args()
+
+def load_checkpoint_meta(resume_path: str):
+    results_path = os.path.join(resume_path, 'results.json')
+    if not os.path.exists(results_path):
+        raise FileNotFoundError(f'No results.json found in {resume_path}')
+    with open(results_path, 'r') as f:
+        return json.load(f)
 
 def set_seed(seed):
     random.seed(seed)
@@ -99,22 +99,44 @@ def train(args):
         print(f"GPU: {torch.cuda.get_device_name(0)}")
         print(f"Memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
 
+    
+    episode_rewards = []
+    episode_losses = []
+    start_episode = 1
+    if args.resume:
+        meta = load_checkpoint_meta(args.resume)
+        reward_fn       = meta['reward_fn']
+        scenario        = meta['scenario']
+        episode_rewards = meta.get('episode_rewards', [])
+        episode_losses  = meta.get('episode_losses',  [])
+        start_episode   = len(episode_rewards) + 1
+        output_dir      = args.resume
+        if start_episode > args.episodes:
+            print(f"  Nothing to do — checkpoint already has {len(episode_rewards)} episodes.")
+            return
+    else:
+        reward_fn  = args.reward
+        scenario   = args.scenario
+        timestamp  = datetime.now().strftime('%Y%m%d_%H%M%S')
+        output_dir = os.path.join('outputs', f"{reward_fn}_{scenario}_{timestamp}")
+
+    os.makedirs(output_dir, exist_ok=True)
 
     print("=" * 60)
     print(f"  TrafficMind Training started!")
-    print(f"  Reward   : {args.reward}")
-    print(f"  Scenario : {args.scenario}")
+    print(f"  Reward   : {reward_fn}")
+    print(f"  Scenario : {scenario}")
     print(f"  Episodes : {args.episodes}")
     print(f"  Seed     : {args.seed}")
     print("=" * 60)
 
     set_seed(args.seed)
 
-    config_path = get_config_path(args.scenario)
+    config_path = get_config_path(scenario)
 
     env = SumoEnvironment(
         config_path=config_path,
-        reward_fn=args.reward,
+        reward_fn=reward_fn,
         use_gui=args.gui,
         seed=args.seed
     )
@@ -138,57 +160,25 @@ def train(args):
             target_update_freq=500
         )
         buffers[junction] = ReplayBuffer(capacity=100000)
-    
+
+
     if args.resume:
-        print(f"  Resuming from checkpoint: {args.resume}")
         for junction in intersections:
             model_path = os.path.join(args.resume, f"agent_{junction}_final.pth")
             if os.path.exists(model_path):
                 agents[junction].load(model_path)
-                print(f"  Loaded model for {junction} from {model_path}")
             else:
-                print(f"  Warning: Model file not found for {junction} at {model_path}")
-        steps_completed = args.start_episode * 900  # approximate
-        resumed_epsilon = max(0.01, 1.0 * (0.999995 ** steps_completed))
+                print(f"  WARNING: model not found for {junction}")
+        steps_done = (start_episode - 1) * 900
+        resumed_epsilon = max(0.01, 0.999995 ** steps_done)
         for junction in intersections:
             agents[junction].epsilon = resumed_epsilon
-        print(f'epsilon set to : {resumed_epsilon:.3f}')
-        for junction in intersections:
             agents[junction]._update_target_network()
-        print("Target networks synced")
+        print(f"  Epsilon restored to {resumed_epsilon:.4f}")
 
-    
-    if args.resume:
-        output_dir = args.resume
-    else:
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        output_dir = os.path.join(
-            'outputs',
-            f"{args.reward}_{args.scenario}_{timestamp}"
-            )
-    os.makedirs(output_dir, exist_ok=True)
-
-    episode_rewards = []
-    episode_losses = []
-    if args.resume:
-        old_path = os.path.join(args.resume, 'results.json')
-        if os.path.exists(old_path):
-            with open(old_path, 'r') as f:
-                old_results = json.load(f)
-            episode_rewards = old_results.get('episode_rewards', [])
-            episode_losses  = old_results.get('episode_losses', [])
-            print(f"  old {len(episode_rewards)} episodes load")
-
-            # added warning if user forgot to add --start_episode
-            actual_episodes = len(episode_rewards)
-            if args.start_episode - 1 != actual_episodes:
-                print(f"  WARNING: --start_episode {args.start_episode} doesn't match "
-                    f"checkpoint history ({actual_episodes} episodes completed)")
-
-    start = args.start_episode if args.resume else 1
 
      # the actual training
-    for episode in range(start, args.episodes + 1):
+    for episode in range(start_episode, args.episodes + 1):
         env.seed = random.randint(0, 9999)
         
         states = env.reset()
@@ -282,8 +272,8 @@ def train(args):
         agents[junction].save(model_path)
 
     results = {
-        'reward_fn': args.reward,
-        'scenario': args.scenario,
+        'reward_fn': reward_fn,
+        'scenario': scenario,
         'episodes': len(episode_rewards),
         'seed': args.seed,
         'episode_rewards': episode_rewards,
