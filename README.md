@@ -125,13 +125,11 @@ With options:
 python main.py --reward cooperative --scenario off_peak --episodes 300 --gui --seed 42
 ```
 
+NOTE: RESUME DOESNT WORK AS OF CURRENTLY
 Resume training to episodes(loads `agent_<junction>_final.pth` from the output folder):
 
 ```bash
-python main.py --resume outputs/local_peak_20250101_120000 --start_episode 201 --episodes 500
-python main.py --resume outputs/local_peak_20260521_160033 --start_episode 301 --episodes 500
-
-python main.py --resume outputs/cooperative_peak_20260522_135204 --start_episode 
+python main.py --resume outputs/local_peak_20260602_142746 --episodes 800
 ```
 
 Plot results from a completed run:

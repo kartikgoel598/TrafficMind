@@ -143,6 +143,7 @@ def train(args):
 
     # highen the learning starts 
     LEARNING_STARTS = 5000
+    EPSILON_DECAY = 0.999988
     intersections = ['J1', 'J2', 'J4', 'J5']
 
     agents = {}
@@ -156,7 +157,7 @@ def train(args):
             gamma=0.99,
             epsilon=1.0,
             epsilon_min=0.01,
-            epsilon_decay=0.999995,
+            epsilon_decay=EPSILON_DECAY,
             target_update_freq=500
         )
         buffers[junction] = ReplayBuffer(capacity=100000)
@@ -170,10 +171,12 @@ def train(args):
             else:
                 print(f"  WARNING: model not found for {junction}")
         steps_done = (start_episode - 1) * 900
-        resumed_epsilon = max(0.01, 0.999995 ** steps_done)
+        resumed_epsilon = max(0.01, EPSILON_DECAY ** steps_done)
         for junction in intersections:
             agents[junction].epsilon = resumed_epsilon
             agents[junction]._update_target_network()
+
+
         print(f"  Epsilon restored to {resumed_epsilon:.4f}")
 
 
@@ -218,7 +221,6 @@ def train(args):
                         if loss is not None:
                             total_losses.append(loss)
 
-
             new_epsilon = max(0.01, agents['J1'].epsilon * agents['J1'].epsilon_decay)
             for junction in intersections:
                 agents[junction].epsilon = new_epsilon
@@ -230,6 +232,8 @@ def train(args):
                 if env._current_phase[junction] != prev_phases[junction]:
                     phase_changes[junction] += 1
                 prev_phases[junction] = env._current_phase[junction]
+
+            
 
 
 

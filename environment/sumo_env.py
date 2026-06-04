@@ -150,10 +150,10 @@ class SumoEnvironment:
     fix 4 : added yellow feature and updated state size to 13
 
     [
-        j1 queue time, j1 wait time
-        j2 queue time, j2 wait time
-        j4 queue time, j4 wait time
-        j5 queue time, j5 wait time
+        lane 1 queue time, lane 1 wait time
+        lane 2 queue time, lane 2 wait time
+        lane 3 queue time, lane 3 wait time
+        lane 4 queue time, lane 4 wait time
         true_phase, min_green_time, is_yellow,
         (neighbour 1), (neighbour 2)
     ]
@@ -168,9 +168,9 @@ class SumoEnvironment:
             # 4 lanes × 2 features = 8 values
             for lane in self.lanes[junction]:
                 queue = traci.lane.getLastStepHaltingNumber(lane)
-                wait = traci.lane.getWaitingTime(lane)/max(1,queue) if queue > 0 else 0.0
-                obs.append(queue/50.0)
-                obs.append(wait/300.0)
+                wait = min(traci.lane.getWaitingTime(lane), 300.0)
+                obs.append(min(queue, 50) / 50.0)
+                obs.append(wait / 300.0)
 
             true_phase = self._get_true_phase(junction)
             obs.append(true_phase / max(1, self.num_phases[junction] - 1))
