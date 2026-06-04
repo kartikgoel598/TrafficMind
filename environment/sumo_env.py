@@ -148,6 +148,15 @@ class SumoEnvironment:
 
     21/5/2026
     fix 4 : added yellow feature and updated state size to 13
+
+    [
+        j1 queue time, j1 wait time
+        j2 queue time, j2 wait time
+        j4 queue time, j4 wait time
+        j5 queue time, j5 wait time
+        true_phase, min_green_time, is_yellow,
+        (neighbour 1), (neighbour 2)
+    ]
     '''
     # return 12 states of all junction
     def _get_state(self):
