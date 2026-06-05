@@ -32,14 +32,29 @@ KPI_NAMES = [
     "switch_count_total",
     "mean_reward_per_step",
 ]
+ 
+def get_current_green_lanes(env: SumoEnvironment, junction: str) -> set:
+    """
+    Return the incoming lanes that currently have green signal at this junction.
+    This uses SUMO's actual traffic light state instead of hard-coded lane indices.
+    """
+    green_lanes = set()
 
-# Phase 0 = horizontal green (lanes 0 & 3); phase 1 = vertical (lanes 1 & 2).
-PHASE_LANE_GROUPS = {
-    0: (0, 3),
-    1: (1, 2),
-}
+    signal_state = traci.trafficlight.getRedYellowGreenState(junction)
+    controlled_links = traci.trafficlight.getControlledLinks(junction)
 
+    for signal_index, signal_char in enumerate(signal_state):
+        if signal_char not in ("g", "G"):
+            continue
 
+        for link in controlled_links[signal_index]:
+            incoming_lane = link[0]
+
+            if incoming_lane in env.lanes[junction]:
+                green_lanes.add(incoming_lane)
+
+    return green_lanes
+ 
 def parse_args():
     parser = argparse.ArgumentParser(
         description="TrafficMind — evaluate DQN vs baselines"
@@ -103,12 +118,11 @@ def set_seed(seed: int) -> None:
 
 
 def is_switch_legal(state: np.ndarray) -> bool:
-    """Match action masking in DQNAgent.select_action."""
     phase_time = state[9]
     is_yellow = state[10]
-    return is_yellow == 0.0 and phase_time >= 1.0
-
-
+    return is_yellow < 0.5 and phase_time >= 1.0
+ 
+ 
 def new_kpi_tracker(env: SumoEnvironment) -> Dict:
     num_lanes = sum(len(env.lanes[j]) for j in env.intersections)
     return {
@@ -162,6 +176,7 @@ def get_kpis(tracker: Dict) -> Dict[str, float]:
         "throughput": float(throughput),
         "switch_count_total": float(tracker["switch_count"]),
         "mean_reward_per_step": tracker["reward_sum"] / steps,
+        "step_count": float(tracker["step_count"]),
     }
 
 
@@ -179,7 +194,7 @@ def load_agents(env: SumoEnvironment, models_dir: str) -> Dict[str, DQNAgent]:
             epsilon=0.0,
             epsilon_min=0.0,
             epsilon_decay=1.0,
-            target_update_freq=50,
+            target_update_freq=500,
         )
         agent.load(path)
         agent.epsilon = 0.0
@@ -364,6 +379,9 @@ def main():
     results = evaluate(args)
 
     output_path = args.output
+    output_dir = os.path.dirname(output_path)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
 

@@ -91,7 +91,7 @@ class SumoEnvironment:
                 if self._yellow_timer[junction] == 0:
                     # yellow finished set to green
                     pending_phases[junction] = self._current_phase[junction] * 2
-                    self._phase_time[junction] = 0
+                    self._phase_time[junction] = 1
                 executed_actions[junction] = 0
                 continue
 
@@ -159,7 +159,7 @@ class SumoEnvironment:
             # 4 lanes × 2 features = 8 values
             for lane in self.lanes[junction]:
                 queue = traci.lane.getLastStepHaltingNumber(lane)
-                wait = traci.lane.getWaitingTime(lane)/max(1,queue) if queue > 0 else 0.0
+                wait = min(traci.lane.getWaitingTime(lane), 300.0)
                 obs.append(queue/50.0)
                 obs.append(wait/300.0)
 
@@ -214,11 +214,8 @@ class SumoEnvironment:
                         for l in self.lanes[neighbour]
                     )
                     neigh_queues.append(nq)
-    
-                max_starvation = max(
-                                traci.lane.getWaitingTime(l) 
-                                for l in self.lanes[junction]
-                ) / 300.0
+    #changed from starvation to red time
+                max_starvation = max(self._red_time[junction]) / 300.0
                 reward = fairness_reward(
                         own_queue, own_wait, neigh_queues, max_starvation
                 )
