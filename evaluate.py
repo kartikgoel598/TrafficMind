@@ -14,11 +14,10 @@ import numpy as np
 import torch
 import traci
 from dotenv import load_dotenv
-from utils.traffic_signal_utils import get_green_red_queues
  
 load_dotenv()
 sys.path.append(os.path.join(os.getenv("Sumo_Home", ""), "tools"))
-
+ 
 from environment.sumo_env import SumoEnvironment
 from agents.dqn import DQNAgent
  
@@ -32,13 +31,33 @@ KPI_NAMES = [
     "throughput",
     "switch_count_total",
     "mean_reward_per_step",
-    "step_count",
 ]
  
+def get_current_green_lanes(env: SumoEnvironment, junction: str) -> set:
+    """
+    Return the incoming lanes that currently have green signal at this junction.
+    This uses SUMO's actual traffic light state instead of hard-coded lane indices.
+    """
+    green_lanes = set()
+
+    signal_state = traci.trafficlight.getRedYellowGreenState(junction)
+    controlled_links = traci.trafficlight.getControlledLinks(junction)
+
+    for signal_index, signal_char in enumerate(signal_state):
+        if signal_char not in ("g", "G"):
+            continue
+
+        for link in controlled_links[signal_index]:
+            incoming_lane = link[0]
+
+            if incoming_lane in env.lanes[junction]:
+                green_lanes.add(incoming_lane)
+
+    return green_lanes
  
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="TrafficMind - evaluate DQN vs baselines"
+        description="TrafficMind — evaluate DQN vs baselines"
     )
     parser.add_argument(
         "--models-dir",
@@ -50,7 +69,7 @@ def parse_args():
         "--reward",
         type=str,
         default="local",
-        choices=["local", "cooperative", "fairness","pressure_local"],
+        choices=["local", "cooperative", "fairness"],
         help="Reward function used during training (for env rewards)",
     )
     parser.add_argument(
@@ -99,9 +118,10 @@ def set_seed(seed: int) -> None:
  
  
 def is_switch_legal(state: np.ndarray) -> bool:
+    """Match action masking in DQNAgent.select_action."""
     phase_time = state[9]
     is_yellow = state[10]
-    return is_yellow < 0.5 and phase_time >= 1.0
+    return is_yellow == 0.0 and phase_time >= 1.0
  
  
 def new_kpi_tracker(env: SumoEnvironment) -> Dict:
@@ -113,8 +133,8 @@ def new_kpi_tracker(env: SumoEnvironment) -> Dict:
         "step_count": 0,
         "reward_sum": 0.0,
         "switch_count": 0,
-        "num_lanes": num_lanes,
         "throughput": 0.0,
+        "num_lanes": num_lanes,
     }
  
  
@@ -147,16 +167,16 @@ def get_kpis(tracker: Dict) -> Dict[str, float]:
     num_lanes = tracker["num_lanes"]
     lane_steps = steps * num_lanes
  
+   
  
     return {
         "mean_waiting_time": tracker["total_waiting_time"] / lane_steps,
         "total_waiting_time": tracker["total_waiting_time"],
         "mean_queue_length": tracker["total_queue"] / lane_steps,
         "max_lane_wait": tracker["max_lane_wait"],
+        "throughput": float(tracker["throughput"]),
         "switch_count_total": float(tracker["switch_count"]),
         "mean_reward_per_step": tracker["reward_sum"] / steps,
-        "step_count": float(tracker["step_count"]),
-        "throughput": float(tracker["throughput"]),
     }
  
  
@@ -174,7 +194,7 @@ def load_agents(env: SumoEnvironment, models_dir: str) -> Dict[str, DQNAgent]:
             epsilon=0.0,
             epsilon_min=0.0,
             epsilon_decay=1.0,
-            target_update_freq=500,
+            target_update_freq=50,
         )
         agent.load(path)
         agent.epsilon = 0.0
@@ -195,15 +215,32 @@ def random_legal_action(_env: SumoEnvironment, _junction: str, state: np.ndarray
         return 0
     return random.randint(0, 1)
  
+ 
 def greedy_queue_action(
     env: SumoEnvironment, junction: str, state: np.ndarray
 ) -> int:
     if not is_switch_legal(state):
         return 0
- 
-    green_queue, red_queue = get_green_red_queues(env, junction)
- 
-    return 1 if red_queue > green_queue else 0
+
+    green_lanes = get_current_green_lanes(env, junction)
+
+    if not green_lanes:
+        return 0
+
+    all_lanes = set(env.lanes[junction])
+    red_lanes = all_lanes - green_lanes
+
+    current_q = sum(
+        traci.lane.getLastStepHaltingNumber(lane)
+        for lane in green_lanes
+    )
+
+    opposite_q = sum(
+        traci.lane.getLastStepHaltingNumber(lane)
+        for lane in red_lanes
+    )
+
+    return 1 if opposite_q > current_q else 0
  
 def make_policy_fn(
     policy_name: str,
@@ -348,9 +385,6 @@ def main():
     results = evaluate(args)
  
     output_path = args.output
-    output_dir = os.path.dirname(output_path)
-    if output_dir:
-        os.makedirs(output_dir, exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
  
@@ -360,3 +394,4 @@ def main():
  
 if __name__ == "__main__":
     main()
+ 
