@@ -14,6 +14,7 @@ import numpy as np
 import torch
 import traci
 from dotenv import load_dotenv
+from utils.traffic_signal_utils import get_green_red_queues
 
 load_dotenv()
 sys.path.append(os.path.join(os.getenv("Sumo_Home", ""), "tools"))
@@ -31,15 +32,10 @@ KPI_NAMES = [
     "throughput",
     "switch_count_total",
     "mean_reward_per_step",
+    "step_count",
 ]
-
-# Phase 0 = horizontal green (lanes 0 & 3); phase 1 = vertical (lanes 1 & 2).
-PHASE_LANE_GROUPS = {
-    0: (0, 3),
-    1: (1, 2),
-}
-
-
+ 
+ 
 def parse_args():
     parser = argparse.ArgumentParser(
         description="TrafficMind — evaluate DQN vs baselines"
@@ -54,7 +50,7 @@ def parse_args():
         "--reward",
         type=str,
         default="local",
-        choices=["local", "cooperative", "fairness"],
+        choices=["local", "cooperative", "fairness","pressure_local"],
         help="Reward function used during training (for env rewards)",
     )
     parser.add_argument(
@@ -103,12 +99,11 @@ def set_seed(seed: int) -> None:
 
 
 def is_switch_legal(state: np.ndarray) -> bool:
-    """Match action masking in DQNAgent.select_action."""
     phase_time = state[9]
     is_yellow = state[10]
-    return is_yellow == 0.0 and phase_time >= 1.0
-
-
+    return is_yellow < 0.5 and phase_time >= 1.0
+ 
+ 
 def new_kpi_tracker(env: SumoEnvironment) -> Dict:
     num_lanes = sum(len(env.lanes[j]) for j in env.intersections)
     return {
@@ -119,6 +114,7 @@ def new_kpi_tracker(env: SumoEnvironment) -> Dict:
         "reward_sum": 0.0,
         "switch_count": 0,
         "num_lanes": num_lanes,
+        "throughput": 0.0,
     }
 
 
@@ -142,6 +138,7 @@ def update_kpi_tracker(
     tracker["step_count"] += 1
     tracker["reward_sum"] += float(np.mean(list(rewards.values())))
     tracker["switch_count"] += int(sum(executed_actions.values()))
+    tracker["throughput"] += traci.simulation.getArrivedNumber()
 
 
 def get_kpis(tracker: Dict) -> Dict[str, float]:
@@ -150,18 +147,16 @@ def get_kpis(tracker: Dict) -> Dict[str, float]:
     num_lanes = tracker["num_lanes"]
     lane_steps = steps * num_lanes
 
-    throughput = (
-        traci.simulation.getArrivedNumber() if traci.isLoaded() else 0
-    )
 
     return {
         "mean_waiting_time": tracker["total_waiting_time"] / lane_steps,
         "total_waiting_time": tracker["total_waiting_time"],
         "mean_queue_length": tracker["total_queue"] / lane_steps,
         "max_lane_wait": tracker["max_lane_wait"],
-        "throughput": float(throughput),
         "switch_count_total": float(tracker["switch_count"]),
         "mean_reward_per_step": tracker["reward_sum"] / steps,
+        "step_count": float(tracker["step_count"]),
+        "throughput": float(tracker["throughput"]),
     }
 
 
@@ -179,7 +174,7 @@ def load_agents(env: SumoEnvironment, models_dir: str) -> Dict[str, DQNAgent]:
             epsilon=0.0,
             epsilon_min=0.0,
             epsilon_decay=1.0,
-            target_update_freq=50,
+            target_update_freq=500,
         )
         agent.load(path)
         agent.epsilon = 0.0
@@ -200,26 +195,15 @@ def random_legal_action(_env: SumoEnvironment, _junction: str, state: np.ndarray
         return 0
     return random.randint(0, 1)
 
-
 def greedy_queue_action(
     env: SumoEnvironment, junction: str, state: np.ndarray
 ) -> int:
     if not is_switch_legal(state):
         return 0
 
-    true_phase = env._get_true_phase(junction)
-    current_lanes = PHASE_LANE_GROUPS[true_phase]
-    opposite_lanes = PHASE_LANE_GROUPS[1 - true_phase]
-    lanes = env.lanes[junction]
+    green_queue, red_queue = get_green_red_queues(env, junction)
 
-    current_q = sum(
-        traci.lane.getLastStepHaltingNumber(lanes[i]) for i in current_lanes
-    )
-    opposite_q = sum(
-        traci.lane.getLastStepHaltingNumber(lanes[i]) for i in opposite_lanes
-    )
-    return 1 if opposite_q > current_q else 0
-
+    return 1 if red_queue > green_queue else 0
 
 def make_policy_fn(
     policy_name: str,
@@ -364,6 +348,9 @@ def main():
     results = evaluate(args)
 
     output_path = args.output
+    output_dir = os.path.dirname(output_path)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
 

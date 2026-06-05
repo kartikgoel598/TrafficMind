@@ -5,6 +5,8 @@ import platform
 from rewards.local import local_reward
 from rewards.cooperative import cooperative_reward
 from rewards.fairness import fairness_reward
+from rewards.pressure_local import pressure_local_reward
+from utils.traffic_signal_utils import get_green_red_queues
 
 # READY TO TRAIN
 class SumoEnvironment:
@@ -91,7 +93,7 @@ class SumoEnvironment:
                 if self._yellow_timer[junction] == 0:
                     # yellow finished set to green
                     pending_phases[junction] = self._current_phase[junction] * 2
-                    self._phase_time[junction] = 0
+                    self._phase_time[junction] = 1
                 executed_actions[junction] = 0
                 continue
 
@@ -123,7 +125,7 @@ class SumoEnvironment:
         self._step += 1
         self._update_red_time()
         next_state = self._get_state()
-        rewards    = self.compute_reward()
+        rewards    = self.compute_reward(executed_actions)
         done       = self._is_done()
         return next_state, rewards, done, executed_actions
 
@@ -169,8 +171,8 @@ class SumoEnvironment:
             for lane in self.lanes[junction]:
                 queue = traci.lane.getLastStepHaltingNumber(lane)
                 wait = min(traci.lane.getWaitingTime(lane), 300.0)
-                obs.append(min(queue, 50) / 50.0)
-                obs.append(wait / 300.0)
+                obs.append(queue/50.0)
+                obs.append(wait/300.0)
 
             true_phase = self._get_true_phase(junction)
             obs.append(true_phase / max(1, self.num_phases[junction] - 1))
@@ -191,7 +193,10 @@ class SumoEnvironment:
                 
         return states
 
-    def compute_reward(self):
+    def compute_reward(self, executed_actions=None):
+        if executed_actions is None:
+            executed_actions = {j: 0 for j in self.intersections}
+            
         rewards = {}
         for junction in self.intersections:
             own_queue = 0
@@ -223,13 +228,19 @@ class SumoEnvironment:
                         for l in self.lanes[neighbour]
                     )
                     neigh_queues.append(nq)
-    
-                max_starvation = max(
-                                traci.lane.getWaitingTime(l) 
-                                for l in self.lanes[junction]
-                ) / 300.0
+    #changed from starvation to red time
+                max_starvation = max(self._red_time[junction]) / 300.0
                 reward = fairness_reward(
                         own_queue, own_wait, neigh_queues, max_starvation
+                )
+            elif self.reward_fn == 'pressure_local':
+                green_queue, red_queue = get_green_red_queues(self, junction)
+                reward = pressure_local_reward(
+                    own_queue=own_queue,
+                    own_wait=own_wait,
+                    green_queue=green_queue,
+                    red_queue=red_queue,
+                    executed_action=executed_actions[junction]
                 )
             else:
                 raise ValueError(f"Unknown reward function: {self.reward_fn}")
