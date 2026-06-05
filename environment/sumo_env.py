@@ -5,6 +5,8 @@ import platform
 from rewards.local import local_reward
 from rewards.cooperative import cooperative_reward
 from rewards.fairness import fairness_reward
+from rewards.pressure_local import pressure_local_reward
+from utils.traffic_signal_utils import get_green_red_queues
 
 # READY TO TRAIN
 class SumoEnvironment:
@@ -123,7 +125,7 @@ class SumoEnvironment:
         self._step += 1
         self._update_red_time()
         next_state = self._get_state()
-        rewards    = self.compute_reward()
+        rewards    = self.compute_reward(executed_actions)
         done       = self._is_done()
         return next_state, rewards, done, executed_actions
 
@@ -182,7 +184,10 @@ class SumoEnvironment:
                 
         return states
 
-    def compute_reward(self):
+    def compute_reward(self, executed_actions=None):
+        if executed_actions is None:
+            executed_actions = {j: 0 for j in self.intersections}
+            
         rewards = {}
         for junction in self.intersections:
             own_queue = 0
@@ -218,6 +223,15 @@ class SumoEnvironment:
                 max_starvation = max(self._red_time[junction]) / 300.0
                 reward = fairness_reward(
                         own_queue, own_wait, neigh_queues, max_starvation
+                )
+            elif self.reward_fn == 'pressure_local':
+                green_queue, red_queue = get_green_red_queues(self, junction)
+                reward = pressure_local_reward(
+                    own_queue=own_queue,
+                    own_wait=own_wait,
+                    green_queue=green_queue,
+                    red_queue=red_queue,
+                    executed_action=executed_actions[junction]
                 )
             else:
                 raise ValueError(f"Unknown reward function: {self.reward_fn}")

@@ -24,7 +24,7 @@ def parse_args():
         '--reward',
         type=str,
         default='local',
-        choices=['local', 'cooperative', 'fairness'],
+        choices=['local', 'cooperative', 'fairness','pressure_local'],
         help='Reward function: local, cooperative, or fairness'
     )
 
@@ -157,7 +157,7 @@ def train(args):
                 print(f"  Loaded model for {junction} from {model_path}")
             else:
                 print(f"  Warning: Model file not found for {junction} at {model_path}")
-        print(f'loaded epsilon from checkpoint: {agents[;J1].epsilon:.3f}')
+        print(f'loaded epsilon from checkpoint: {agents['J1'].epsilon:.3f}')
         print('target networks loaded from checkpoint')
 
     
