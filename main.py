@@ -26,8 +26,8 @@ def parse_args():
         '--reward',
         type=str,
         default='local',
-        choices=['local', 'cooperative', 'fairness','pressure_local'],
-        help='Reward function: local, cooperative, or fairness'
+        choices=['local', 'cooperative', 'fairness','pressure_local'], # TODO ADD PRESSURE COOPERATIVE AND FAIRNESS
+        help='Reward function: local, cooperative, or fairness (and pressure_local, pressure_cooperative, pressure_fairness)'
     )
 
     parser.add_argument(
@@ -117,18 +117,17 @@ def train(args):
         print(f"GPU: {torch.cuda.get_device_name(0)}")
         print(f"Memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
 
-    
     episode_rewards = []
     episode_losses = []
     start_episode = 1
     if args.resume:
         meta = load_checkpoint_meta(args.resume)
-        reward_fn       = meta['reward_fn']
-        scenario        = meta['scenario']
+        reward_fn     = meta['reward_fn']
+        scenario      = meta['scenario']
         episode_rewards = meta.get('episode_rewards', [])
         episode_losses  = meta.get('episode_losses',  [])
-        start_episode   = len(episode_rewards) + 1
-        output_dir      = args.resume
+        start_episode = len(episode_rewards) + 1
+        output_dir    = args.resume
         if start_episode > args.episodes:
             print(f"  Nothing to do — checkpoint already has {len(episode_rewards)} episodes.")
             return
@@ -136,7 +135,7 @@ def train(args):
         reward_fn  = args.reward
         scenario   = args.scenario
         timestamp  = datetime.now().strftime('%Y%m%d_%H%M%S')
-        output_dir = os.path.join('outputs', f"{reward_fn}_{scenario}_{timestamp}")
+        output_dir = os.path.join('outputs', f"{reward_fn}_{scenario}_tu500_lr0005_{timestamp}")
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -161,8 +160,6 @@ def train(args):
         seed=args.seed
     )
 
-    # highen the learning starts 
-    LEARNING_STARTS = 5000
     EPSILON_DECAY = 0.999988
     intersections = ['J1', 'J2', 'J4', 'J5']
 
@@ -177,11 +174,10 @@ def train(args):
             gamma=0.99,
             epsilon=1.0,
             epsilon_min=0.01,
-            epsilon_decay=0.990,
+            epsilon_decay=EPSILON_DECAY,
             target_update_freq=500
         )
         buffers[junction] = ReplayBuffer(capacity=100000)
-
 
     if args.resume:
         for junction in intersections:
@@ -190,19 +186,8 @@ def train(args):
                 agents[junction].load(model_path)
             else:
                 print(f"  Warning: Model file not found for {junction} at {model_path}")
-        print(f'loaded epsilon from checkpoint: {agents['J1'].epsilon:.3f}')
+        print(f'loaded epsilon from checkpoint: {agents["J1"].epsilon:.3f}')
         print('target networks loaded from checkpoint')
-
-    
-    if args.resume:
-        output_dir = args.resume
-    else:
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        output_dir = os.path.join(
-            'outputs',
-            f"{args.reward}_{args.scenario}_tu500_lr0005_{timestamp}"
-            )
-    os.makedirs(output_dir, exist_ok=True)
 
     episode_rewards = []
     episode_rewards_per_step = []
@@ -219,12 +204,10 @@ def train(args):
             episode_losses  = old_results.get('episode_losses', [])
             episode_kpis = old_results.get('episode_kpis', [])
             episode_indices = old_results.get('episode_indices', list(range(1, len(episode_rewards) + 1)))
-            print(f"  old {len(episode_rewards)} episodes load")
-
+            print(f"  old {len(episode_rewards)} episodes loaded")
 
     start = start_episode if args.resume else 1
     for episode in range(start, args.episodes + 1):
-        # Fix: deterministic-by-default episode seed for lower training variance.
         if args.randomize_episode_seed:
             env.seed = random.randint(0, 9999)
         else:
@@ -250,14 +233,14 @@ def train(args):
         step_count = 0
         done = False
 
-
         while not done:
             actions = {}
             for junction in intersections:
                 actions[junction] = agents[junction].select_action(states[junction])
+
             for junction in intersections:
                 phase_time_ready = env._phase_time[junction] >= env.min_green_time
-                not_yellow = env._yellow_timer[junction] ==0
+                not_yellow = env._yellow_timer[junction] == 0
                 switch_legal = phase_time_ready and not_yellow
                 if switch_legal:
                     legal_switch_opportunities[junction] += 1
@@ -271,11 +254,10 @@ def train(args):
 
             next_states, rewards, done, executed_actions = env.step(actions)
 
-
             for junction in intersections:
                 buffers[junction].push(
                     state=states[junction],
-                    action=executed_actions[junction], # store executed SUMO action
+                    action=executed_actions[junction],
                     reward=rewards[junction],
                     next_state=next_states[junction],
                     done=float(done)
@@ -285,11 +267,10 @@ def train(args):
 
             if step_count % 4 == 0:
                 for junction in intersections:
-                    if len(buffers[junction]) >= LEARNING_STARTS:
+                    if len(buffers[junction]) >= args.replay_warmup:
                         loss = agents[junction].train_step(
-                            buffers[junction], batch_size=128
+                            buffers[junction], batch_size=args.batch_size
                         )
-
                         if loss is not None:
                             total_losses.append(loss)
 
@@ -311,16 +292,11 @@ def train(args):
                     phase_changes[junction] += 1
                 prev_phases[junction] = env._current_phase[junction]
 
-            
-
-
-
         avg_reward = np.mean(list(total_rewards.values()))
-        # Fix: this is the primary learning curve to compare runs fairly.
         avg_reward_per_step = np.mean(
             [total_rewards[j] / max(step_count, 1) for j in intersections]
         )
-        avg_loss = float(np.mean(total_losses)) if total_losses else None
+        avg_loss = float(np.mean(total_losses)) if total_losses else 0.0
         episode_kpi = {
             'mean_waiting_time': kpi_sum['mean_waiting_time'] / max(step_count, 1),
             'total_waiting_time': kpi_sum['total_waiting_time'] / max(step_count, 1),
@@ -335,7 +311,6 @@ def train(args):
             'switch_when_legal': switch_when_legal,
             'keep_when_legal': keep_when_legal,
             'illegal_switch_requests': illegal_switch_requests,
-
         }
 
         episode_rewards.append(avg_reward)
@@ -346,7 +321,6 @@ def train(args):
 
         current_epsilon = agents['J1'].epsilon
 
-        # temporary change to see difference
         if episode % 1 == 0:
             print(
                 f"Episode {episode:4d}/{args.episodes} | "
@@ -358,7 +332,6 @@ def train(args):
                 f"Wait: {episode_kpi['mean_waiting_time']:.2f} | "
                 f"Thrpt: {episode_kpi['throughput']}"
             )
-            
 
         if episode % 100 == 0:
             for junction in intersections:
@@ -374,9 +347,7 @@ def train(args):
     print("=" * 60)
 
     for junction in intersections:
-        model_path = os.path.join(
-            output_dir, f"agent_{junction}_final.pth"
-        )
+        model_path = os.path.join(output_dir, f"agent_{junction}_final.pth")
         agents[junction].save(model_path)
 
     results = {
