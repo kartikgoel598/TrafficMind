@@ -21,8 +21,8 @@ class DQNAgent:
     def __init__(self, state_size, action_size,
                  lr=0.001, gamma=0.99,
                  epsilon=1.0, epsilon_min=0.01,
-                 epsilon_decay=0.995,
-                 target_update_freq=100):
+                 epsilon_decay=0.999991,
+                 target_update_freq=500):
         
         self.state_size  = state_size
         self.action_size = action_size
@@ -35,7 +35,6 @@ class DQNAgent:
         self.target_update_freq = target_update_freq
         self.steps_done = 0
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
         self.main_network = QNetwork(state_size, action_size).to(self.device)
 
         self.target_network = QNetwork(state_size, action_size).to(self.device)
@@ -56,6 +55,7 @@ class DQNAgent:
         if random.random() < self.epsilon:
             return random.randrange(self.action_size)
         
+        # expected future return if I take action a in state s
         state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
         with torch.no_grad():
             q_values = self.main_network(state_tensor)
@@ -99,8 +99,9 @@ class DQNAgent:
     def decay_epsilon(self):
         self.epsilon = max(
             self.epsilon_min,
-            self.epsilon * self.epsilon_decay
+            self.epsilon * self.epsilon_decay,
         )
+
     def _update_target_network(self):
          self.target_network.load_state_dict(
             self.main_network.state_dict()
