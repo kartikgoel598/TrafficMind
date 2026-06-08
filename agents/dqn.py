@@ -107,8 +107,8 @@ class DQNAgent:
             self.main_network.state_dict()
         )
     def save(self, path):
-        # Save full training state so resume continues with consistent targets,
-        # optimizer momentum, epsilon, and update counters.
+        # Save full training state: weights, target network, optimizer,
+        # epsilon, and gradient-step counter.
         payload = {
             'model_state_dict': self.main_network.state_dict(),
             'target_state_dict': self.target_network.state_dict(),

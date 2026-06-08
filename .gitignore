@@ -2,3 +2,5 @@ myvirtual/
 __pycache__/
 .env
 *.pyc
+
+outputs

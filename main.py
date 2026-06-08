@@ -65,13 +65,6 @@ def parse_args():
     )
 
     parser.add_argument(
-        '--resume',
-        type=str,
-        default=None,
-        help='Path to a checkpoint to resume training'
-    )
-
-    parser.add_argument(
         '--batch_size',
         type=int,
         default=128,
@@ -90,13 +83,6 @@ def parse_args():
     )
 
     return parser.parse_args()
-
-def load_checkpoint_meta(resume_path: str):
-    results_path = os.path.join(resume_path, 'results.json')
-    if not os.path.exists(results_path):
-        raise FileNotFoundError(f'No results.json found in {resume_path}')
-    with open(results_path, 'r') as f:
-        return json.load(f)
 
 def set_seed(seed):
     random.seed(seed)
@@ -123,25 +109,10 @@ def train(args):
         print(f"GPU: {torch.cuda.get_device_name(0)}")
         print(f"Memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
 
-    episode_rewards = []
-    episode_losses = []
-    start_episode = 1
-    if args.resume:
-        meta = load_checkpoint_meta(args.resume)
-        reward_fn     = meta['reward_fn']
-        scenario      = meta['scenario']
-        episode_rewards = meta.get('episode_rewards', [])
-        episode_losses  = meta.get('episode_losses',  [])
-        start_episode = len(episode_rewards) + 1
-        output_dir    = args.resume
-        if start_episode > args.episodes:
-            print(f"  Nothing to do — checkpoint already has {len(episode_rewards)} episodes.")
-            return
-    else:
-        reward_fn  = args.reward
-        scenario   = args.scenario
-        timestamp  = datetime.now().strftime('%Y%m%d_%H%M%S')
-        output_dir = os.path.join('outputs', f"{reward_fn}_{scenario}_{timestamp}")
+    reward_fn = args.reward
+    scenario = args.scenario
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    output_dir = os.path.join('outputs', f"{reward_fn}_{scenario}_{timestamp}")
 
     os.makedirs(output_dir, exist_ok=True)
     run_logger = logger(output_dir)
@@ -186,36 +157,13 @@ def train(args):
         )
         buffers[junction] = ReplayBuffer(capacity=100000)
 
-    if args.resume:
-        for junction in intersections:
-            model_path = os.path.join(args.resume, f"agent_{junction}_final.pth")
-            if not os.path.exists(model_path):
-                raise FileNotFoundError(
-                    f"Missing checkpoint for {junction}: {model_path}"
-                )
-            agents[junction].load(model_path)
-        print(f'loaded epsilon from checkpoint: {agents["J1"].epsilon:.3f}')
-        print('target networks loaded from checkpoint')
-
     episode_rewards = []
     episode_rewards_per_step = []
     episode_losses = []
     episode_kpis = []
     episode_indices = []
-    if args.resume:
-        old_path = os.path.join(args.resume, 'results.json')
-        if os.path.exists(old_path):
-            with open(old_path, 'r') as f:
-                old_results = json.load(f)
-            episode_rewards = old_results.get('episode_rewards', [])
-            episode_rewards_per_step = old_results.get('episode_rewards_per_step', [])
-            episode_losses  = old_results.get('episode_losses', [])
-            episode_kpis = old_results.get('episode_kpis', [])
-            episode_indices = old_results.get('episode_indices', list(range(1, len(episode_rewards) + 1)))
-            print(f"  old {len(episode_rewards)} episodes loaded")
 
-    start = start_episode if args.resume else 1
-    for episode in range(start, args.episodes + 1):
+    for episode in range(1, args.episodes + 1):
         if args.randomize_episode_seed:
             env.seed = random.randint(0, 9999)
         else:
