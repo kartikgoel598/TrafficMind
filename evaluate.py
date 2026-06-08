@@ -14,6 +14,7 @@ import numpy as np
 import torch
 from dotenv import load_dotenv
 from utils.traffic_signal_utils import get_green_red_queues
+from utils.webster_utils import compute_webster_timing
 
 load_dotenv()
 sumo_home = os.getenv("Sumo_Home")
@@ -27,7 +28,7 @@ from environment.sumo_env import SumoEnvironment
 from agents.dqn import DQNAgent
 
 INTERSECTIONS = ["J1", "J2", "J4", "J5"]
-POLICIES = ["trained_dqn", "fixed_time", "random_legal", "greedy_queue"]
+POLICIES = ["trained_dqn", "fixed_time", "random_legal", "greedy_queue", "webster_static"]
 KPI_NAMES = [
     "mean_waiting_time",
     "total_waiting_time",
@@ -183,10 +184,37 @@ def greedy_queue_action(
 
     return 1 if red_queue > green_queue else 0
 
+def webster_static_action(
+    env: SumoEnvironment,
+    junction: str,
+    state: np.ndarray,
+    timing: Dict,
+) -> int:
+    """
+    Static Webster baseline.
+    Switches after the precomputed Webster green time for the current phase.
+    """
+
+    if env._yellow_timer[junction] > 0:
+        return 0
+
+    current_phase = env._current_phase[junction]
+
+    if current_phase == 0:
+        green_limit = timing["green0"]
+    else:
+        green_limit = timing["green1"]
+
+    if env._phase_time[junction] >= green_limit:
+        return 1
+
+    return 0
+
 def make_policy_fn(
     policy_name: str,
     env: SumoEnvironment,
     agents: Optional[Dict[str, DQNAgent]] = None,
+    webster_timing: Optional[Dict] = None,
 ) -> Callable[[Dict[str, np.ndarray]], Dict[str, int]]:
     if policy_name == "trained_dqn":
         if agents is None:
@@ -197,6 +225,14 @@ def make_policy_fn(
                 j: agents[j].select_action(states[j]) for j in INTERSECTIONS
             }
 
+        return select
+    if policy_name == "webster_static":
+        if webster_timing is None:
+            raise ValueError("webster_static requires webster_timing")
+        def select(states: Dict[str, np.ndarray]) -> Dict[str, int]:
+            return {
+                j: webster_static_action(env, j, states[j], webster_timing) for j in INTERSECTIONS
+            }
         return select
 
     baselines = {
@@ -292,6 +328,24 @@ def evaluate(args) -> Dict:
         seed=args.seeds[0],
     )
 
+    if args.scenario == "peak":
+        phase0_flow = 400.0
+        phase1_flow = 300.0
+    else:
+        phase0_flow = 160.0
+        phase1_flow = 120.0
+    webster_timing = compute_webster_timing(
+        phase0_flow=phase0_flow,
+        phase1_flow=phase1_flow,
+        saturation_flow=1800.0,
+        yellow_time=env.yellow_duration,
+        min_green=env.min_green_time,
+        min_cycle=36.0,
+        max_cycle=120.0,
+    )
+
+    print(f"  Webster : {webster_timing}")
+
     agents = load_agents(env, args.models_dir)
 
     results = {
@@ -312,7 +366,7 @@ def evaluate(args) -> Dict:
 
     for policy_name in POLICIES:
         print(f"\n  Policy: {policy_name}")
-        select_actions = make_policy_fn(policy_name, env, agents)
+        select_actions = make_policy_fn(policy_name, env, agents,webster_timing = webster_timing)
         per_seed = []
 
         for seed in args.seeds:
