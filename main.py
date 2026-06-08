@@ -68,7 +68,7 @@ def parse_args():
     parser.add_argument(
         '--batch_size',
         type=int,
-        default=128,
+        default=512,
         help='Replay sample batch size (default: 128)'
     )
     parser.add_argument(
@@ -265,7 +265,7 @@ def train(args):
                 total_rewards[junction] += rewards[junction]
                 total_switches[junction] += int(executed_actions[junction] == 1)
 
-            if step_count % 4 == 0:
+            if step_count % 16 == 0:
                 for junction in intersections:
                     if len(buffers[junction]) >= args.replay_warmup:
                         loss = agents[junction].train_step(
