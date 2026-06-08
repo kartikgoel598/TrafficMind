@@ -47,7 +47,7 @@ def parse_args():
     parser.add_argument(
         '--episodes',
         type=int,
-        default=500,
+        default=700,
         help='how much epiosdes you want to train'
     )
 
