@@ -2,10 +2,8 @@ myvirtual/
 __pycache__/
 .env
 *.pyc
-<<<<<<< Updated upstream
-=======
 
 .venv
 
 outputs
->>>>>>> Stashed changes
+

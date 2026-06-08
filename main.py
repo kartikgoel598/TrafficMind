@@ -11,11 +11,17 @@ import sys
 
 from dotenv import load_dotenv
 load_dotenv()  # loads Sumo_Home from .env before anything else runs
-sys.path.append(os.path.join(os.getenv('Sumo_Home'), "tools"))
+sumo_home = os.getenv('Sumo_Home')
+if not sumo_home:
+    raise EnvironmentError(
+        'Sumo_Home is not set. Add it to your .env file (see README).'
+    )
+sys.path.append(os.path.join(sumo_home, "tools"))
 
 from environment.sumo_env import SumoEnvironment
 from agents.dqn import DQNAgent
 from agents.replay_buffer import ReplayBuffer
+from utils.logger import logger
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -26,8 +32,8 @@ def parse_args():
         '--reward',
         type=str,
         default='local',
-        choices=['local', 'cooperative', 'fairness','pressure_local'], # TODO ADD PRESSURE COOPERATIVE AND FAIRNESS
-        help='Reward function: local, cooperative, or fairness (and pressure_local, pressure_cooperative, pressure_fairness)'
+        choices=['local', 'cooperative', 'fairness', 'pressure_local'],
+        help='Reward function: local, cooperative, fairness, or pressure_local'
     )
 
     parser.add_argument(
@@ -41,7 +47,7 @@ def parse_args():
     parser.add_argument(
         '--episodes',
         type=int,
-        default=500,
+        default=700,
         help='how much epiosdes you want to train'
     )
 
@@ -56,13 +62,6 @@ def parse_args():
         type=int,
         default=42,
         help='Random seed (default: 42)'
-    )
-
-    parser.add_argument(
-        '--resume',
-        type=str,
-        default=None,
-        help='Path to a checkpoint to resume training'
     )
 
     parser.add_argument(
@@ -84,13 +83,6 @@ def parse_args():
     )
 
     return parser.parse_args()
-
-def load_checkpoint_meta(resume_path: str):
-    results_path = os.path.join(resume_path, 'results.json')
-    if not os.path.exists(results_path):
-        raise FileNotFoundError(f'No results.json found in {resume_path}')
-    with open(results_path, 'r') as f:
-        return json.load(f)
 
 def set_seed(seed):
     random.seed(seed)
@@ -117,27 +109,13 @@ def train(args):
         print(f"GPU: {torch.cuda.get_device_name(0)}")
         print(f"Memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
 
-    episode_rewards = []
-    episode_losses = []
-    start_episode = 1
-    if args.resume:
-        meta = load_checkpoint_meta(args.resume)
-        reward_fn     = meta['reward_fn']
-        scenario      = meta['scenario']
-        episode_rewards = meta.get('episode_rewards', [])
-        episode_losses  = meta.get('episode_losses',  [])
-        start_episode = len(episode_rewards) + 1
-        output_dir    = args.resume
-        if start_episode > args.episodes:
-            print(f"  Nothing to do — checkpoint already has {len(episode_rewards)} episodes.")
-            return
-    else:
-        reward_fn  = args.reward
-        scenario   = args.scenario
-        timestamp  = datetime.now().strftime('%Y%m%d_%H%M%S')
-        output_dir = os.path.join('outputs', f"{reward_fn}_{scenario}_tu500_lr0005_{timestamp}")
+    reward_fn = args.reward
+    scenario = args.scenario
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    output_dir = os.path.join('outputs', f"{reward_fn}_{scenario}_{timestamp}")
 
     os.makedirs(output_dir, exist_ok=True)
+    run_logger = logger(output_dir)
 
     print("=" * 60)
     print(f"  TrafficMind Training started!")
@@ -179,35 +157,13 @@ def train(args):
         )
         buffers[junction] = ReplayBuffer(capacity=100000)
 
-    if args.resume:
-        for junction in intersections:
-            model_path = os.path.join(args.resume, f"agent_{junction}_final.pth")
-            if os.path.exists(model_path):
-                agents[junction].load(model_path)
-            else:
-                print(f"  Warning: Model file not found for {junction} at {model_path}")
-        print(f'loaded epsilon from checkpoint: {agents["J1"].epsilon:.3f}')
-        print('target networks loaded from checkpoint')
-
     episode_rewards = []
     episode_rewards_per_step = []
     episode_losses = []
     episode_kpis = []
     episode_indices = []
-    if args.resume:
-        old_path = os.path.join(args.resume, 'results.json')
-        if os.path.exists(old_path):
-            with open(old_path, 'r') as f:
-                old_results = json.load(f)
-            episode_rewards = old_results.get('episode_rewards', [])
-            episode_rewards_per_step = old_results.get('episode_rewards_per_step', [])
-            episode_losses  = old_results.get('episode_losses', [])
-            episode_kpis = old_results.get('episode_kpis', [])
-            episode_indices = old_results.get('episode_indices', list(range(1, len(episode_rewards) + 1)))
-            print(f"  old {len(episode_rewards)} episodes loaded")
 
-    start = start_episode if args.resume else 1
-    for episode in range(start, args.episodes + 1):
+    for episode in range(1, args.episodes + 1):
         if args.randomize_episode_seed:
             env.seed = random.randint(0, 9999)
         else:
@@ -274,7 +230,10 @@ def train(args):
                         if loss is not None:
                             total_losses.append(loss)
 
-            new_epsilon = max(0.01, agents['J1'].epsilon * agents['J1'].epsilon_decay)
+            new_epsilon = max(
+                agents['J1'].epsilon_min,
+                agents['J1'].epsilon * agents['J1'].epsilon_decay,
+            )
             for junction in intersections:
                 agents[junction].epsilon = new_epsilon
 
@@ -321,17 +280,19 @@ def train(args):
 
         current_epsilon = agents['J1'].epsilon
 
-        if episode % 1 == 0:
-            print(
-                f"Episode {episode:4d}/{args.episodes} | "
-                f"Reward: {avg_reward:8.2f} | "
-                f"R/Step: {avg_reward_per_step:8.4f} | "
-                f"Loss: {avg_loss:7.4f} | "
-                f"Epsilon: {current_epsilon:.3f} | "
-                f"Steps: {step_count} | "
-                f"Wait: {episode_kpi['mean_waiting_time']:.2f} | "
-                f"Thrpt: {episode_kpi['throughput']}"
-            )
+        print(
+            f"Episode {episode:4d}/{args.episodes} | "
+            f"Reward: {avg_reward:8.2f} | "
+            f"R/Step: {avg_reward_per_step:8.4f} | "
+            f"Loss: {avg_loss:7.4f} | "
+            f"Epsilon: {current_epsilon:.3f} | "
+            f"Steps: {step_count} | "
+            f"Wait: {episode_kpi['mean_waiting_time']:.2f} | "
+            f"Thrpt: {episode_kpi['throughput']}"
+        )
+        run_logger.log(
+            episode, avg_reward, avg_loss, current_epsilon, step_count, total_rewards
+        )
 
         if episode % 100 == 0:
             for junction in intersections:

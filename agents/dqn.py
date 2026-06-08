@@ -34,8 +34,6 @@ class DQNAgent:
         self.epsilon_decay = epsilon_decay
         self.target_update_freq = target_update_freq
         self.steps_done = 0
-        # just to make sure its using GPU
-        print(f"Building DQN Agent... using {'GPU' if torch.cuda.is_available() else 'CPU'} (this should print 4 times)")
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.main_network = QNetwork(state_size, action_size).to(self.device)
 
@@ -100,13 +98,19 @@ class DQNAgent:
             self._update_target_network()
         return loss.item()
     
+    def decay_epsilon(self):
+        self.epsilon = max(
+            self.epsilon_min,
+            self.epsilon * self.epsilon_decay,
+        )
+
     def _update_target_network(self):
          self.target_network.load_state_dict(
             self.main_network.state_dict()
         )
     def save(self, path):
-        # Save full training state so resume continues with consistent targets,
-        # optimizer momentum, epsilon, and update counters.
+        # Save full training state: weights, target network, optimizer,
+        # epsilon, and gradient-step counter.
         payload = {
             'model_state_dict': self.main_network.state_dict(),
             'target_state_dict': self.target_network.state_dict(),
