@@ -11,11 +11,17 @@ import sys
 
 from dotenv import load_dotenv
 load_dotenv()  # loads Sumo_Home from .env before anything else runs
-sys.path.append(os.path.join(os.getenv('Sumo_Home'), "tools"))
+sumo_home = os.getenv('Sumo_Home')
+if not sumo_home:
+    raise EnvironmentError(
+        'Sumo_Home is not set. Add it to your .env file (see README).'
+    )
+sys.path.append(os.path.join(sumo_home, "tools"))
 
 from environment.sumo_env import SumoEnvironment
 from agents.dqn import DQNAgent
 from agents.replay_buffer import ReplayBuffer
+from utils.logger import logger
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -26,8 +32,8 @@ def parse_args():
         '--reward',
         type=str,
         default='local',
-        choices=['local', 'cooperative', 'fairness','pressure_local'], # TODO ADD PRESSURE COOPERATIVE AND FAIRNESS
-        help='Reward function: local, cooperative, or fairness (and pressure_local, pressure_cooperative, pressure_fairness)'
+        choices=['local', 'cooperative', 'fairness', 'pressure_local'],
+        help='Reward function: local, cooperative, fairness, or pressure_local'
     )
 
     parser.add_argument(
@@ -135,9 +141,10 @@ def train(args):
         reward_fn  = args.reward
         scenario   = args.scenario
         timestamp  = datetime.now().strftime('%Y%m%d_%H%M%S')
-        output_dir = os.path.join('outputs', f"{reward_fn}_{scenario}_tu500_lr0005_{timestamp}")
+        output_dir = os.path.join('outputs', f"{reward_fn}_{scenario}_{timestamp}")
 
     os.makedirs(output_dir, exist_ok=True)
+    run_logger = logger(output_dir)
 
     print("=" * 60)
     print(f"  TrafficMind Training started!")
@@ -182,10 +189,11 @@ def train(args):
     if args.resume:
         for junction in intersections:
             model_path = os.path.join(args.resume, f"agent_{junction}_final.pth")
-            if os.path.exists(model_path):
-                agents[junction].load(model_path)
-            else:
-                print(f"  Warning: Model file not found for {junction} at {model_path}")
+            if not os.path.exists(model_path):
+                raise FileNotFoundError(
+                    f"Missing checkpoint for {junction}: {model_path}"
+                )
+            agents[junction].load(model_path)
         print(f'loaded epsilon from checkpoint: {agents["J1"].epsilon:.3f}')
         print('target networks loaded from checkpoint')
 
@@ -274,7 +282,10 @@ def train(args):
                         if loss is not None:
                             total_losses.append(loss)
 
-            new_epsilon = max(0.01, agents['J1'].epsilon * agents['J1'].epsilon_decay)
+            new_epsilon = max(
+                agents['J1'].epsilon_min,
+                agents['J1'].epsilon * agents['J1'].epsilon_decay,
+            )
             for junction in intersections:
                 agents[junction].epsilon = new_epsilon
 
@@ -321,17 +332,19 @@ def train(args):
 
         current_epsilon = agents['J1'].epsilon
 
-        if episode % 1 == 0:
-            print(
-                f"Episode {episode:4d}/{args.episodes} | "
-                f"Reward: {avg_reward:8.2f} | "
-                f"R/Step: {avg_reward_per_step:8.4f} | "
-                f"Loss: {avg_loss:7.4f} | "
-                f"Epsilon: {current_epsilon:.3f} | "
-                f"Steps: {step_count} | "
-                f"Wait: {episode_kpi['mean_waiting_time']:.2f} | "
-                f"Thrpt: {episode_kpi['throughput']}"
-            )
+        print(
+            f"Episode {episode:4d}/{args.episodes} | "
+            f"Reward: {avg_reward:8.2f} | "
+            f"R/Step: {avg_reward_per_step:8.4f} | "
+            f"Loss: {avg_loss:7.4f} | "
+            f"Epsilon: {current_epsilon:.3f} | "
+            f"Steps: {step_count} | "
+            f"Wait: {episode_kpi['mean_waiting_time']:.2f} | "
+            f"Thrpt: {episode_kpi['throughput']}"
+        )
+        run_logger.log(
+            episode, avg_reward, avg_loss, current_epsilon, step_count, total_rewards
+        )
 
         if episode % 100 == 0:
             for junction in intersections:

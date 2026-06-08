@@ -1,7 +1,11 @@
 import json
+import os
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+
+OUTPUT_DIR = "output_plots"
 
 local_peak = "outputs/local_peak_20260602_142746/results.json"
 cooperative_peak = "outputs/cooperative_peak_20260602_170004/results.json" 
@@ -62,7 +66,7 @@ def plot_rewards(data: dict[str, dict]) -> None:
     fig.suptitle("Training Reward per Reward Function\n(not comparable across subplots — different equations)",
                     fontsize=12, y=1.02)
     fig.tight_layout()
-    fig.savefig("output_plots/rewards.png", dpi=150, bbox_inches="tight")
+    fig.savefig(os.path.join(OUTPUT_DIR, "rewards.png"), dpi=150, bbox_inches="tight")
     print("  Saved: rewards.png")
     plt.close(fig)
  
@@ -93,7 +97,7 @@ def plot_loss(data: dict[str, dict]) -> None:
     ax.grid(True, alpha=0.3, linestyle="--")
     ax.xaxis.set_minor_locator(ticker.AutoMinorLocator())
     fig.tight_layout()
-    fig.savefig("output_plots/loss.png", dpi=150)
+    fig.savefig(os.path.join(OUTPUT_DIR, "loss.png"), dpi=150)
     print("  Saved: loss.png")
     plt.close(fig)
 
@@ -111,7 +115,8 @@ def main():
     if not data:
         print("No data loaded, exiting.")
         return
- 
+
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
     plot_rewards(data)
     plot_loss(data)
     print("Done.")
