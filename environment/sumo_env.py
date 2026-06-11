@@ -6,6 +6,8 @@ from rewards.local import local_reward
 from rewards.cooperative import cooperative_reward
 from rewards.fairness import fairness_reward
 from rewards.pressure_local import pressure_local_reward
+from rewards.pressure_cooperative import pressure_cooperative_reward
+from rewards.pressure_fairness import pressure_fairness_reward
 from utils.traffic_signal_utils import get_green_red_queues
 
 # READY TO TRAIN
@@ -240,6 +242,41 @@ class SumoEnvironment:
                     own_wait=own_wait,
                     green_queue=green_queue,
                     red_queue=red_queue,
+                    executed_action=executed_actions[junction]
+                )
+            elif self.reward_fn == 'pressure_cooperative':
+                neigh_queues = []
+                for neighbour in self.neighbours[junction]:
+                    nq = sum(
+                        traci.lane.getLastStepHaltingNumber(l)
+                        for l in self.lanes[neighbour]
+                    )
+                    neigh_queues.append(nq)
+                green_queue, red_queue = get_green_red_queues(self, junction)
+                reward = pressure_cooperative_reward(
+                    own_queue=own_queue,
+                    own_wait=own_wait,
+                    neigh_queues=neigh_queues,
+                    green_queue=green_queue,
+                    red_queue=red_queue,
+                    executed_action=executed_actions[junction])
+            elif self.reward_fn == 'pressure_fairness':
+                neigh_queues = []
+                for neighbour in self.neighbours[junction]:
+                    nq = sum(
+                        traci.lane.getLastStepHaltingNumber(l)
+                        for l in self.lanes[neighbour]
+                    )
+                    neigh_queues.append(nq)
+                green_queue, red_queue = get_green_red_queues(self, junction)
+                max_starvation = max(self._red_time[junction]) / 300.0
+                reward = pressure_fairness_reward(
+                    own_queue=own_queue,
+                    own_wait=own_wait,
+                    neigh_queues=neigh_queues,
+                    green_queue=green_queue,
+                    red_queue=red_queue,
+                    max_starvation=max_starvation,
                     executed_action=executed_actions[junction]
                 )
             else:
