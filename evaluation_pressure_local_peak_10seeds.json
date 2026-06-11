@@ -1,0 +1,709 @@
+{
+  "models_dir": "C:\\Users\\hp\\Desktop\\TrafficMind\\outputs\\pressure_local_peak_20260609_033145",
+  "reward_fn": "pressure_local",
+  "scenario": "peak",
+  "seeds": [
+    42,
+    123,
+    456,
+    789,
+    1000,
+    2024,
+    2025,
+    2026,
+    777,
+    999
+  ],
+  "policies": {
+    "trained_dqn": {
+      "per_seed": {
+        "42": {
+          "mean_waiting_time": 1.5328755452833758,
+          "total_waiting_time": 26.11,
+          "mean_queue_length": 0.265625,
+          "max_lane_wait": 34.0,
+          "throughput": 362.0,
+          "switch_count_total": 191.0,
+          "mean_reward_per_step": -0.06167361111111113,
+          "step_count": 900.0
+        },
+        "123": {
+          "mean_waiting_time": 1.4445684016443385,
+          "total_waiting_time": 25.003333333333334,
+          "mean_queue_length": 0.2548611111111111,
+          "max_lane_wait": 40.0,
+          "throughput": 366.0,
+          "switch_count_total": 194.0,
+          "mean_reward_per_step": -0.05897083333333336,
+          "step_count": 900.0
+        },
+        "456": {
+          "mean_waiting_time": 1.4839195627120791,
+          "total_waiting_time": 25.16111111111111,
+          "mean_queue_length": 0.2532638888888889,
+          "max_lane_wait": 39.0,
+          "throughput": 362.0,
+          "switch_count_total": 191.0,
+          "mean_reward_per_step": -0.059237499999999936,
+          "step_count": 900.0
+        },
+        "789": {
+          "mean_waiting_time": 1.463746375440588,
+          "total_waiting_time": 24.40111111111111,
+          "mean_queue_length": 0.2442361111111111,
+          "max_lane_wait": 33.0,
+          "throughput": 364.0,
+          "switch_count_total": 193.0,
+          "mean_reward_per_step": -0.05730972222222223,
+          "step_count": 900.0
+        },
+        "1000": {
+          "mean_waiting_time": 1.3267684828167297,
+          "total_waiting_time": 22.314444444444444,
+          "mean_queue_length": 0.23833333333333334,
+          "max_lane_wait": 35.0,
+          "throughput": 365.0,
+          "switch_count_total": 192.0,
+          "mean_reward_per_step": -0.05379861111111111,
+          "step_count": 900.0
+        },
+        "2024": {
+          "mean_waiting_time": 1.47660654946994,
+          "total_waiting_time": 25.182222222222222,
+          "mean_queue_length": 0.25395833333333334,
+          "max_lane_wait": 38.0,
+          "throughput": 363.0,
+          "switch_count_total": 190.0,
+          "mean_reward_per_step": -0.05923055555555543,
+          "step_count": 900.0
+        },
+        "2025": {
+          "mean_waiting_time": 1.54013167524176,
+          "total_waiting_time": 26.754444444444445,
+          "mean_queue_length": 0.26569444444444446,
+          "max_lane_wait": 42.0,
+          "throughput": 361.0,
+          "switch_count_total": 190.0,
+          "mean_reward_per_step": -0.06244861111111114,
+          "step_count": 900.0
+        },
+        "2026": {
+          "mean_waiting_time": 1.438044367748197,
+          "total_waiting_time": 23.891111111111112,
+          "mean_queue_length": 0.2336111111111111,
+          "max_lane_wait": 32.0,
+          "throughput": 366.0,
+          "switch_count_total": 192.0,
+          "mean_reward_per_step": -0.05556944444444445,
+          "step_count": 900.0
+        },
+        "777": {
+          "mean_waiting_time": 1.4877468269599092,
+          "total_waiting_time": 25.218888888888888,
+          "mean_queue_length": 0.25340277777777775,
+          "max_lane_wait": 35.0,
+          "throughput": 367.0,
+          "switch_count_total": 191.0,
+          "mean_reward_per_step": -0.05922083333333326,
+          "step_count": 900.0
+        },
+        "999": {
+          "mean_waiting_time": 1.4176064385167284,
+          "total_waiting_time": 23.173333333333332,
+          "mean_queue_length": 0.236875,
+          "max_lane_wait": 33.0,
+          "throughput": 363.0,
+          "switch_count_total": 191.0,
+          "mean_reward_per_step": -0.05487499999999994,
+          "step_count": 900.0
+        }
+      },
+      "aggregate": {
+        "mean_waiting_time": {
+          "mean": 1.4612014225833645,
+          "std": 0.05798049349364022
+        },
+        "total_waiting_time": {
+          "mean": 24.721000000000004,
+          "std": 1.2560283721337424
+        },
+        "mean_queue_length": {
+          "mean": 0.2499861111111111,
+          "std": 0.010780444257778144
+        },
+        "max_lane_wait": {
+          "mean": 36.1,
+          "std": 3.2388269481403293
+        },
+        "throughput": {
+          "mean": 363.9,
+          "std": 1.9209372712298547
+        },
+        "switch_count_total": {
+          "mean": 191.5,
+          "std": 1.2041594578792296
+        },
+        "mean_reward_per_step": {
+          "mean": -0.05823347222222219,
+          "std": 0.002683662954938624
+        },
+        "step_count": {
+          "mean": 900.0,
+          "std": 0.0
+        }
+      }
+    },
+    "fixed_time": {
+      "per_seed": {
+        "42": {
+          "mean_waiting_time": 1.0876076561911525,
+          "total_waiting_time": 14.85,
+          "mean_queue_length": 0.15041666666666667,
+          "max_lane_wait": 22.0,
+          "throughput": 366.0,
+          "switch_count_total": 200.0,
+          "mean_reward_per_step": -0.035284722222222224,
+          "step_count": 900.0
+        },
+        "123": {
+          "mean_waiting_time": 1.162185391310105,
+          "total_waiting_time": 15.75,
+          "mean_queue_length": 0.1554861111111111,
+          "max_lane_wait": 19.0,
+          "throughput": 364.0,
+          "switch_count_total": 200.0,
+          "mean_reward_per_step": -0.03706249999999998,
+          "step_count": 900.0
+        },
+        "456": {
+          "mean_waiting_time": 1.1068924857979632,
+          "total_waiting_time": 14.97888888888889,
+          "mean_queue_length": 0.1504861111111111,
+          "max_lane_wait": 25.0,
+          "throughput": 365.0,
+          "switch_count_total": 200.0,
+          "mean_reward_per_step": -0.03549305555555555,
+          "step_count": 900.0
+        },
+        "789": {
+          "mean_waiting_time": 1.1879281639317767,
+          "total_waiting_time": 16.38,
+          "mean_queue_length": 0.1604861111111111,
+          "max_lane_wait": 19.0,
+          "throughput": 366.0,
+          "switch_count_total": 200.0,
+          "mean_reward_per_step": -0.038405555555555554,
+          "step_count": 900.0
+        },
+        "1000": {
+          "mean_waiting_time": 1.1257161047300368,
+          "total_waiting_time": 15.508888888888889,
+          "mean_queue_length": 0.15472222222222223,
+          "max_lane_wait": 21.0,
+          "throughput": 365.0,
+          "switch_count_total": 200.0,
+          "mean_reward_per_step": -0.03664166666666668,
+          "step_count": 900.0
+        },
+        "2024": {
+          "mean_waiting_time": 1.1805406345508263,
+          "total_waiting_time": 16.22,
+          "mean_queue_length": 0.15881944444444446,
+          "max_lane_wait": 22.0,
+          "throughput": 366.0,
+          "switch_count_total": 200.0,
+          "mean_reward_per_step": -0.03802222222222221,
+          "step_count": 900.0
+        },
+        "2025": {
+          "mean_waiting_time": 1.1878690263554823,
+          "total_waiting_time": 16.404444444444444,
+          "mean_queue_length": 0.16145833333333334,
+          "max_lane_wait": 24.0,
+          "throughput": 366.0,
+          "switch_count_total": 200.0,
+          "mean_reward_per_step": -0.03848611111111111,
+          "step_count": 900.0
+        },
+        "2026": {
+          "mean_waiting_time": 1.1349347007243034,
+          "total_waiting_time": 15.455555555555556,
+          "mean_queue_length": 0.15479166666666666,
+          "max_lane_wait": 19.0,
+          "throughput": 366.0,
+          "switch_count_total": 200.0,
+          "mean_reward_per_step": -0.03657777777777775,
+          "step_count": 900.0
+        },
+        "777": {
+          "mean_waiting_time": 1.1985404914191038,
+          "total_waiting_time": 16.743333333333332,
+          "mean_queue_length": 0.16361111111111112,
+          "max_lane_wait": 21.0,
+          "throughput": 365.0,
+          "switch_count_total": 200.0,
+          "mean_reward_per_step": -0.03915694444444443,
+          "step_count": 900.0
+        },
+        "999": {
+          "mean_waiting_time": 1.1590194527005557,
+          "total_waiting_time": 16.07888888888889,
+          "mean_queue_length": 0.15909722222222222,
+          "max_lane_wait": 21.0,
+          "throughput": 366.0,
+          "switch_count_total": 200.0,
+          "mean_reward_per_step": -0.03781249999999998,
+          "step_count": 900.0
+        }
+      },
+      "aggregate": {
+        "mean_waiting_time": {
+          "mean": 1.1531234107711303,
+          "std": 0.03586297385975964
+        },
+        "total_waiting_time": {
+          "mean": 15.837,
+          "std": 0.6012263290687058
+        },
+        "mean_queue_length": {
+          "mean": 0.1569375,
+          "std": 0.004260681249141991
+        },
+        "max_lane_wait": {
+          "mean": 21.3,
+          "std": 1.9519221295943137
+        },
+        "throughput": {
+          "mean": 365.5,
+          "std": 0.6708203932499369
+        },
+        "switch_count_total": {
+          "mean": 200.0,
+          "std": 0.0
+        },
+        "mean_reward_per_step": {
+          "mean": -0.037294305555555546,
+          "std": 0.0012328462579873165
+        },
+        "step_count": {
+          "mean": 900.0,
+          "std": 0.0
+        }
+      }
+    },
+    "random_legal": {
+      "per_seed": {
+        "42": {
+          "mean_waiting_time": 1.6388848318797375,
+          "total_waiting_time": 26.24222222222222,
+          "mean_queue_length": 0.23597222222222222,
+          "max_lane_wait": 34.0,
+          "throughput": 364.0,
+          "switch_count_total": 187.0,
+          "mean_reward_per_step": -0.059030555555555544,
+          "step_count": 900.0
+        },
+        "123": {
+          "mean_waiting_time": 1.722261823799884,
+          "total_waiting_time": 27.441111111111113,
+          "mean_queue_length": 0.239375,
+          "max_lane_wait": 50.0,
+          "throughput": 363.0,
+          "switch_count_total": 189.0,
+          "mean_reward_per_step": -0.06105972222222223,
+          "step_count": 900.0
+        },
+        "456": {
+          "mean_waiting_time": 1.6092733241831667,
+          "total_waiting_time": 26.145555555555557,
+          "mean_queue_length": 0.23493055555555556,
+          "max_lane_wait": 50.0,
+          "throughput": 364.0,
+          "switch_count_total": 187.0,
+          "mean_reward_per_step": -0.058723611111111185,
+          "step_count": 900.0
+        },
+        "789": {
+          "mean_waiting_time": 1.6536032834774879,
+          "total_waiting_time": 25.322222222222223,
+          "mean_queue_length": 0.22027777777777777,
+          "max_lane_wait": 44.0,
+          "throughput": 363.0,
+          "switch_count_total": 190.0,
+          "mean_reward_per_step": -0.056319444444444464,
+          "step_count": 900.0
+        },
+        "1000": {
+          "mean_waiting_time": 1.6783606565482996,
+          "total_waiting_time": 26.51,
+          "mean_queue_length": 0.22868055555555555,
+          "max_lane_wait": 39.0,
+          "throughput": 364.0,
+          "switch_count_total": 187.0,
+          "mean_reward_per_step": -0.05873472222222221,
+          "step_count": 900.0
+        },
+        "2024": {
+          "mean_waiting_time": 1.7233825509624292,
+          "total_waiting_time": 28.09888888888889,
+          "mean_queue_length": 0.2503472222222222,
+          "max_lane_wait": 54.0,
+          "throughput": 364.0,
+          "switch_count_total": 188.0,
+          "mean_reward_per_step": -0.06290416666666665,
+          "step_count": 900.0
+        },
+        "2025": {
+          "mean_waiting_time": 1.6681404181427775,
+          "total_waiting_time": 26.93,
+          "mean_queue_length": 0.24520833333333333,
+          "max_lane_wait": 37.0,
+          "throughput": 364.0,
+          "switch_count_total": 187.0,
+          "mean_reward_per_step": -0.060970833333333335,
+          "step_count": 900.0
+        },
+        "2026": {
+          "mean_waiting_time": 1.5869093794075277,
+          "total_waiting_time": 24.365555555555556,
+          "mean_queue_length": 0.21381944444444445,
+          "max_lane_wait": 40.0,
+          "throughput": 366.0,
+          "switch_count_total": 189.0,
+          "mean_reward_per_step": -0.054437499999999896,
+          "step_count": 900.0
+        },
+        "777": {
+          "mean_waiting_time": 1.6444726998571373,
+          "total_waiting_time": 26.83,
+          "mean_queue_length": 0.23965277777777777,
+          "max_lane_wait": 47.0,
+          "throughput": 366.0,
+          "switch_count_total": 190.0,
+          "mean_reward_per_step": -0.06010138888888884,
+          "step_count": 900.0
+        },
+        "999": {
+          "mean_waiting_time": 1.7749396633425212,
+          "total_waiting_time": 28.497777777777777,
+          "mean_queue_length": 0.24729166666666666,
+          "max_lane_wait": 45.0,
+          "throughput": 363.0,
+          "switch_count_total": 187.0,
+          "mean_reward_per_step": -0.06312499999999999,
+          "step_count": 900.0
+        }
+      },
+      "aggregate": {
+        "mean_waiting_time": {
+          "mean": 1.6700228631600968,
+          "std": 0.053988064190717326
+        },
+        "total_waiting_time": {
+          "mean": 26.638333333333332,
+          "std": 1.1692255799417508
+        },
+        "mean_queue_length": {
+          "mean": 0.23555555555555557,
+          "std": 0.011112065931196558
+        },
+        "max_lane_wait": {
+          "mean": 44.0,
+          "std": 6.099180272790763
+        },
+        "throughput": {
+          "mean": 364.1,
+          "std": 1.044030650891055
+        },
+        "switch_count_total": {
+          "mean": 188.1,
+          "std": 1.2206555615733703
+        },
+        "mean_reward_per_step": {
+          "mean": -0.05954069444444443,
+          "std": 0.002585030285689543
+        },
+        "step_count": {
+          "mean": 900.0,
+          "std": 0.0
+        }
+      }
+    },
+    "greedy_queue": {
+      "per_seed": {
+        "42": {
+          "mean_waiting_time": 1.1496071755766597,
+          "total_waiting_time": 17.054444444444446,
+          "mean_queue_length": 0.18993055555555555,
+          "max_lane_wait": 21.0,
+          "throughput": 366.0,
+          "switch_count_total": 197.0,
+          "mean_reward_per_step": -0.042004166666666676,
+          "step_count": 900.0
+        },
+        "123": {
+          "mean_waiting_time": 1.30156043907567,
+          "total_waiting_time": 20.607777777777777,
+          "mean_queue_length": 0.22680555555555557,
+          "max_lane_wait": 31.0,
+          "throughput": 364.0,
+          "switch_count_total": 198.0,
+          "mean_reward_per_step": -0.05024305555555546,
+          "step_count": 900.0
+        },
+        "456": {
+          "mean_waiting_time": 1.4603859963191486,
+          "total_waiting_time": 22.553333333333335,
+          "mean_queue_length": 0.22020833333333334,
+          "max_lane_wait": 34.0,
+          "throughput": 362.0,
+          "switch_count_total": 198.0,
+          "mean_reward_per_step": -0.0524555555555556,
+          "step_count": 900.0
+        },
+        "789": {
+          "mean_waiting_time": 1.4673378160931767,
+          "total_waiting_time": 22.524444444444445,
+          "mean_queue_length": 0.21597222222222223,
+          "max_lane_wait": 34.0,
+          "throughput": 364.0,
+          "switch_count_total": 197.0,
+          "mean_reward_per_step": -0.05207222222222224,
+          "step_count": 900.0
+        },
+        "1000": {
+          "mean_waiting_time": 1.1822867541960178,
+          "total_waiting_time": 18.04222222222222,
+          "mean_queue_length": 0.19729166666666667,
+          "max_lane_wait": 24.0,
+          "throughput": 364.0,
+          "switch_count_total": 196.0,
+          "mean_reward_per_step": -0.044088888888888886,
+          "step_count": 900.0
+        },
+        "2024": {
+          "mean_waiting_time": 1.2739993472511644,
+          "total_waiting_time": 19.41777777777778,
+          "mean_queue_length": 0.20715277777777777,
+          "max_lane_wait": 36.0,
+          "throughput": 365.0,
+          "switch_count_total": 197.0,
+          "mean_reward_per_step": -0.04678055555555554,
+          "step_count": 900.0
+        },
+        "2025": {
+          "mean_waiting_time": 1.4594540499393487,
+          "total_waiting_time": 22.626666666666665,
+          "mean_queue_length": 0.22277777777777777,
+          "max_lane_wait": 31.0,
+          "throughput": 364.0,
+          "switch_count_total": 197.0,
+          "mean_reward_per_step": -0.0528833333333333,
+          "step_count": 900.0
+        },
+        "2026": {
+          "mean_waiting_time": 1.1632245972779967,
+          "total_waiting_time": 17.33,
+          "mean_queue_length": 0.19722222222222222,
+          "max_lane_wait": 22.0,
+          "throughput": 365.0,
+          "switch_count_total": 198.0,
+          "mean_reward_per_step": -0.04309027777777772,
+          "step_count": 900.0
+        },
+        "777": {
+          "mean_waiting_time": 1.4002331541259951,
+          "total_waiting_time": 21.596666666666668,
+          "mean_queue_length": 0.21090277777777777,
+          "max_lane_wait": 36.0,
+          "throughput": 362.0,
+          "switch_count_total": 197.0,
+          "mean_reward_per_step": -0.0503097222222222,
+          "step_count": 900.0
+        },
+        "999": {
+          "mean_waiting_time": 1.416279500045785,
+          "total_waiting_time": 21.734444444444446,
+          "mean_queue_length": 0.2098611111111111,
+          "max_lane_wait": 36.0,
+          "throughput": 364.0,
+          "switch_count_total": 197.0,
+          "mean_reward_per_step": -0.05030694444444447,
+          "step_count": 900.0
+        }
+      },
+      "aggregate": {
+        "mean_waiting_time": {
+          "mean": 1.3274368829900962,
+          "std": 0.12290296089434948
+        },
+        "total_waiting_time": {
+          "mean": 20.348777777777777,
+          "std": 2.1090130188266376
+        },
+        "mean_queue_length": {
+          "mean": 0.2098125,
+          "std": 0.011496613245932182
+        },
+        "max_lane_wait": {
+          "mean": 30.5,
+          "std": 5.661271941887264
+        },
+        "throughput": {
+          "mean": 364.0,
+          "std": 1.1832159566199232
+        },
+        "switch_count_total": {
+          "mean": 197.2,
+          "std": 0.6
+        },
+        "mean_reward_per_step": {
+          "mean": -0.0484234722222222,
+          "std": 0.003886077180476927
+        },
+        "step_count": {
+          "mean": 900.0,
+          "std": 0.0
+        }
+      }
+    },
+    "webster_static": {
+      "per_seed": {
+        "42": {
+          "mean_waiting_time": 1.509953976025312,
+          "total_waiting_time": 22.952222222222222,
+          "mean_queue_length": 0.19993055555555556,
+          "max_lane_wait": 38.0,
+          "throughput": 364.0,
+          "switch_count_total": 188.0,
+          "mean_reward_per_step": -0.05110972222222223,
+          "step_count": 900.0
+        },
+        "123": {
+          "mean_waiting_time": 1.561780214238598,
+          "total_waiting_time": 23.98777777777778,
+          "mean_queue_length": 0.20576388888888889,
+          "max_lane_wait": 39.0,
+          "throughput": 364.0,
+          "switch_count_total": 188.0,
+          "mean_reward_per_step": -0.053076388888888805,
+          "step_count": 900.0
+        },
+        "456": {
+          "mean_waiting_time": 1.531714428822143,
+          "total_waiting_time": 23.5,
+          "mean_queue_length": 0.20347222222222222,
+          "max_lane_wait": 41.0,
+          "throughput": 364.0,
+          "switch_count_total": 188.0,
+          "mean_reward_per_step": -0.05219722222222219,
+          "step_count": 900.0
+        },
+        "789": {
+          "mean_waiting_time": 1.5743598692530645,
+          "total_waiting_time": 24.198888888888888,
+          "mean_queue_length": 0.20881944444444445,
+          "max_lane_wait": 36.0,
+          "throughput": 364.0,
+          "switch_count_total": 188.0,
+          "mean_reward_per_step": -0.05372916666666663,
+          "step_count": 900.0
+        },
+        "1000": {
+          "mean_waiting_time": 1.5581667966870503,
+          "total_waiting_time": 23.977777777777778,
+          "mean_queue_length": 0.20680555555555555,
+          "max_lane_wait": 38.0,
+          "throughput": 364.0,
+          "switch_count_total": 188.0,
+          "mean_reward_per_step": -0.05315555555555545,
+          "step_count": 900.0
+        },
+        "2024": {
+          "mean_waiting_time": 1.5661456835915712,
+          "total_waiting_time": 24.017777777777777,
+          "mean_queue_length": 0.2070138888888889,
+          "max_lane_wait": 36.0,
+          "throughput": 364.0,
+          "switch_count_total": 188.0,
+          "mean_reward_per_step": -0.053224999999999925,
+          "step_count": 900.0
+        },
+        "2025": {
+          "mean_waiting_time": 1.557797240980936,
+          "total_waiting_time": 23.985555555555557,
+          "mean_queue_length": 0.20715277777777777,
+          "max_lane_wait": 39.0,
+          "throughput": 364.0,
+          "switch_count_total": 188.0,
+          "mean_reward_per_step": -0.053256944444444385,
+          "step_count": 900.0
+        },
+        "2026": {
+          "mean_waiting_time": 1.6186943555145306,
+          "total_waiting_time": 24.86777777777778,
+          "mean_queue_length": 0.21125,
+          "max_lane_wait": 37.0,
+          "throughput": 364.0,
+          "switch_count_total": 188.0,
+          "mean_reward_per_step": -0.05475138888888887,
+          "step_count": 900.0
+        },
+        "777": {
+          "mean_waiting_time": 1.610282144331659,
+          "total_waiting_time": 24.956666666666667,
+          "mean_queue_length": 0.21215277777777777,
+          "max_lane_wait": 37.0,
+          "throughput": 364.0,
+          "switch_count_total": 188.0,
+          "mean_reward_per_step": -0.0550319444444444,
+          "step_count": 900.0
+        },
+        "999": {
+          "mean_waiting_time": 1.5749474608877325,
+          "total_waiting_time": 24.155555555555555,
+          "mean_queue_length": 0.20590277777777777,
+          "max_lane_wait": 44.0,
+          "throughput": 364.0,
+          "switch_count_total": 188.0,
+          "mean_reward_per_step": -0.0533083333333333,
+          "step_count": 900.0
+        }
+      },
+      "aggregate": {
+        "mean_waiting_time": {
+          "mean": 1.5663842170332598,
+          "std": 0.03057646315761851
+        },
+        "total_waiting_time": {
+          "mean": 24.060000000000002,
+          "std": 0.5518160813661751
+        },
+        "mean_queue_length": {
+          "mean": 0.20682638888888888,
+          "std": 0.0033591376782379757
+        },
+        "max_lane_wait": {
+          "mean": 38.5,
+          "std": 2.3345235059857505
+        },
+        "throughput": {
+          "mean": 364.0,
+          "std": 0.0
+        },
+        "switch_count_total": {
+          "mean": 188.0,
+          "std": 0.0
+        },
+        "mean_reward_per_step": {
+          "mean": -0.05328416666666662,
+          "std": 0.0010667562173057538
+        },
+        "step_count": {
+          "mean": 900.0,
+          "std": 0.0
+        }
+      }
+    }
+  }
+}

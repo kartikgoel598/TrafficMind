@@ -32,7 +32,7 @@ def parse_args():
         '--reward',
         type=str,
         default='local',
-        choices=['local', 'cooperative', 'fairness', 'pressure_local'],
+        choices=['local', 'cooperative', 'fairness', 'pressure_local','pressure_cooperative','pressure_fairness'],
         help='Reward function: local, cooperative, fairness, or pressure_local'
     )
 
