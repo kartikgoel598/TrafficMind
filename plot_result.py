@@ -7,22 +7,91 @@ import matplotlib.ticker as ticker
 
 OUTPUT_DIR = "output_plots"
 
-local_peak = "outputs/local_peak_20260602_142746/results.json"
-cooperative_peak = "outputs/cooperative_peak_20260602_170004/results.json" 
-fairness_peak = "outputs/fairness_peak_20260604_134036/results.json"
+# WRITE THE FOLDER HERE
+local_peak              = "outputs/local_peak_final/results.json"
+cooperative_peak        = "outputs/cooperative_peak_final/results.json" 
+fairness_peak           = "outputs/fairness_peak_final/results.json"
+local_off_peak          = "outputs/local_off_peak_final/results.json"
+cooperative_off_peak    = "outputs/cooperative_off_peak_final/results.json"
+fairness_off_peak       = "outputs/fairness_off_peak_final/results.json"
 
 PATHS = {
-    "Local":       local_peak,
-    "Cooperative": cooperative_peak,
-    "Fairness":    fairness_peak,
+    "Local":                local_peak,
+    "Cooperative":          cooperative_peak,
+    "Fairness":             fairness_peak,
+    "Local_OffPeak":        local_off_peak,
+    "Cooperative_OffPeak":  cooperative_off_peak,
+    "Fairness_OffPeak":     fairness_off_peak,
 }
  
 COLORS = {
     "Local":       "#4C9BE8",
     "Cooperative": "#E8774C",
     "Fairness":    "#4CE89B",
+    "Local_OffPeak":        "#1A5FA8",
+    "Cooperative_OffPeak":  "#A83A10",
+    "Fairness_OffPeak":     "#1A9B5F",
 }
+
+
+def normalize(values):
+    arr = np.array(values, dtype=float)
+    vmin, vmax = np.nanmin(arr), np.nanmax(arr)
+    if vmax == vmin:
+        return np.zeros_like(arr)
+    return (arr - vmin) / (vmax - vmin)
  
+def plot_rewards_normalized(data: dict[str, dict]) -> None:
+    fig, ax = plt.subplots(figsize=(12, 5))
+    for label, result in data.items():
+        rewards = result["episode_rewards"]
+        episodes = np.arange(1, len(rewards) + 1)
+        normed = normalize(rewards)
+        color = COLORS[label]
+        ls = "--" if "OffPeak" in label else "-"
+        ax.plot(episodes, normed, color=color, alpha=0.18, linewidth=0.8)
+        ax.plot(episodes, smooth(normed.tolist(), SMOOTH_WINDOW),
+                color=color, linewidth=2, linestyle=ls, label=label)
+    ax.set_title("Normalised Reward — All Conditions", fontsize=14, fontweight="bold")
+    ax.set_xlabel("Episode", fontsize=11)
+    ax.set_ylabel("Normalised Reward [0–1]", fontsize=11)
+    ax.set_ylim(-0.05, 1.05)
+    ax.legend(fontsize=9)
+    ax.grid(True, alpha=0.3, linestyle="--")
+    fig.tight_layout()
+    fig.savefig(os.path.join(OUTPUT_DIR, "rewards_normalized.png"), dpi=150)
+    print("  Saved: rewards_normalized.png")
+    plt.close(fig)
+
+
+def plot_loss_normalized(data: dict[str, dict]) -> None:
+    fig, ax = plt.subplots(figsize=(12, 5))
+    for label, result in data.items():
+        losses = result["episode_losses"]
+        episodes = np.arange(1, len(losses) + 1)
+        nonzero = [(e, l) for e, l in zip(episodes, losses) if l > 0]
+        if not nonzero:
+            continue
+        ep_nz, l_nz = zip(*nonzero)
+        normed = normalize(list(l_nz))
+        color = COLORS[label]
+        ls = "--" if "OffPeak" in label else "-"
+        ax.plot(np.array(ep_nz), normed, color=color, alpha=0.18, linewidth=0.8)
+        ax.plot(np.array(ep_nz), smooth(normed.tolist(), SMOOTH_WINDOW),
+                color=color, linewidth=2, linestyle=ls, label=label)
+    ax.set_title("Normalised Loss — All Conditions", fontsize=14, fontweight="bold")
+    ax.set_xlabel("Episode", fontsize=11)
+    ax.set_ylabel("Normalised MSE Loss [0–1]", fontsize=11)
+    ax.set_ylim(-0.05, 1.05)
+    ax.legend(fontsize=9)
+    ax.grid(True, alpha=0.3, linestyle="--")
+    fig.tight_layout()
+    fig.savefig(os.path.join(OUTPUT_DIR, "loss_normalized.png"), dpi=150)
+    print("  Saved: loss_normalized.png")
+    plt.close(fig)
+
+
+
 SMOOTH_WINDOW = 20 
 
 def load(path: str) -> dict:
@@ -42,12 +111,10 @@ def smooth(values: list, window: int) -> np.ndarray:
 def plot_rewards(data: dict[str, dict]) -> None:
     labels = list(data.keys())
     n = len(labels)
-    fig, axes = plt.subplots(1, n, figsize=(6 * n, 5), sharey=False)
+    fig, axes = plt.subplots(2, 3, figsize=(18, 10), sharey=False)
+    axes_flat = axes.flatten()
 
-    if n == 1:
-        axes = [axes]
-
-    for ax, label in zip(axes, labels):
+    for ax, label in zip(axes_flat, labels):
         result = data[label]
         rewards = result["episode_rewards"]
         episodes = np.arange(1, len(rewards) + 1)
@@ -119,6 +186,8 @@ def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     plot_rewards(data)
     plot_loss(data)
+    plot_rewards_normalized(data)
+    plot_loss_normalized(data)
     print("Done.")
 
 if __name__ == '__main__':

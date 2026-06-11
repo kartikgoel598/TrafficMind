@@ -80,7 +80,7 @@ def parse_args():
     parser.add_argument(
         "--output",
         type=str,
-        default="evaluation_results.json",
+        default="evaluations/evaluation_results.json",
         help="Path for JSON results",
     )
     return parser.parse_args()
@@ -391,6 +391,7 @@ def evaluate(args) -> Dict:
 
 
 def main():
+    print('Starting evaluation...')
     args = parse_args()
     results = evaluate(args)
 
@@ -407,3 +408,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# python evaluate.py --models-dir "outputs/fairness_peak_final" --scenario peak --reward fairness
+# python evaluate.py --models-dir "outputs/fairness_off_peak_final" --scenario off_peak --reward fairness
