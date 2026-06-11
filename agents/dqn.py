@@ -65,11 +65,12 @@ class DQNAgent:
         if not replay_buffer.is_ready(batch_size):
             return None
         states,actions,rewards,next_states,dones = replay_buffer.sample(batch_size)
-        states      = torch.FloatTensor(states).to(self.device)
-        actions     = torch.LongTensor(actions).to(self.device)
-        rewards     = torch.FloatTensor(rewards).to(self.device)
-        next_states = torch.FloatTensor(next_states).to(self.device)
-        dones       = torch.FloatTensor(dones).to(self.device)
+        
+        states      = torch.as_tensor(states,      dtype=torch.float32, device=self.device)
+        actions     = torch.as_tensor(actions,     dtype=torch.long,    device=self.device)
+        rewards     = torch.as_tensor(rewards,     dtype=torch.float32, device=self.device)
+        next_states = torch.as_tensor(next_states, dtype=torch.float32, device=self.device)
+        dones       = torch.as_tensor(dones,       dtype=torch.float32, device=self.device) 
         current_q = self.main_network(states).gather(
             1, actions.unsqueeze(1)
         ).squeeze(1)
