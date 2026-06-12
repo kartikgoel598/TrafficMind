@@ -312,12 +312,14 @@ class SumoEnvironment:
                 max_lane_wait = max(max_lane_wait, w)
                 lane_count += 1
 
+        '''12/6/2026 changed mean waiting time to only have vehicle that is actually waiting.'''
         vehicles = traci.vehicle.getIDList()
-        if vehicles:
-            vehicle_wait = [traci.vehicle.getWaitingTime(vid) for vid in vehicles]
-            mean_wait = float(np.mean(vehicle_wait))
-        else:
-            mean_wait = 0.0
+        waiting_times = [
+            traci.vehicle.getWaitingTime(vid)
+            for vid in vehicles
+            if traci.vehicle.getWaitingTime(vid) > 0.0
+        ]
+        mean_wait = float(np.mean(waiting_times)) if waiting_times else 0.0
 
         return {
             'mean_waiting_time': mean_wait,

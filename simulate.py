@@ -25,7 +25,7 @@ def parse_args():
     parser.add_argument(
         "--checkpoint-dir",
         type=str,
-        default="outputs/local_peak_20260602_142746",
+        default="outputs/local_peak_final",
         help="Directory containing agent_J*_final.pth files",
     )
     parser.add_argument(

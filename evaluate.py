@@ -160,11 +160,11 @@ def load_agents(env: SumoEnvironment, models_dir: str) -> Dict[str, DQNAgent]:
         agents[junction] = agent
     return agents
 
-
+FIXED_TIME_GREEN = 20
 def fixed_time_action(env: SumoEnvironment, junction: str, _state: np.ndarray) -> int:
     if env._yellow_timer[junction] > 0:
         return 0
-    if env._phase_time[junction] >= env.min_green_time:
+    if env._phase_time[junction] >= FIXED_TIME_GREEN:
         return 1
     return 0
 
