@@ -39,6 +39,22 @@ KPI_NAMES = [
     "mean_reward_per_step",
     "step_count",
 ]
+# to help evaluate all quickly without args
+MODEL_DIRS = {
+    "Local":                        "outputs/local_peak",
+    "Cooperative":                  "outputs/cooperative_peak",
+    "Fairness":                     "outputs/fairness_peak",
+    "Local_OffPeak":                "outputs/local_off_peak",
+    "Cooperative_OffPeak":          "outputs/cooperative_off_peak",
+    "Fairness_OffPeak":             "outputs/fairness_off_peak",
+    
+    "Pressure_Local":               "outputs/pressure_local_peak",
+    "Pressure_Cooperative":         "outputs/pressure_cooperative_peak",
+    "Pressure_Fairness":            "outputs/pressure_fairness_peak",
+    "Pressure_Local_OffPeak":       "outputs/pressure_local_off_peak",
+    "Pressure_Cooperative_OffPeak": "outputs/pressure_cooperative_off_peak",
+    "Pressure_Fairness_OffPeak":    "outputs/pressure_fairness_off_peak",
+}
  
  
 def parse_args():
@@ -48,8 +64,13 @@ def parse_args():
     parser.add_argument(
         "--models-dir",
         type=str,
-        required=True,
+        default=None,
         help="Directory with agent_J1_final.pth, ...",
+    )
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Evaluate all entries in MODEL_DIRS",
     )
     parser.add_argument(
         "--reward",
@@ -85,6 +106,22 @@ def parse_args():
     )
     return parser.parse_args()
 
+def infer_reward_and_scenario(key: str):
+    key_lower = key.lower()
+    scenario = "off_peak" if "offpeak" in key_lower else "peak"
+    if "pressure_fairness" in key_lower:
+        reward = "pressure_fairness"
+    elif "pressure_cooperative" in key_lower:
+        reward = "pressure_cooperative"
+    elif "pressure_local" in key_lower:
+        reward = "pressure_local"
+    elif "fairness" in key_lower:
+        reward = "fairness"
+    elif "cooperative" in key_lower:
+        reward = "cooperative"
+    else:
+        reward = "local"
+    return reward, scenario
 
 def get_config_path(scenario: str) -> str:
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -393,18 +430,45 @@ def evaluate(args) -> Dict:
 def main():
     print('Starting evaluation...')
     args = parse_args()
-    results = evaluate(args)
 
-    output_path = args.output
-    output_dir = os.path.dirname(output_path)
-    if output_dir:
-        os.makedirs(output_dir, exist_ok=True)
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(results, f, indent=2)
+    if args.all:
+        all_results = {}
+        for name, models_dir in MODEL_DIRS.items():
+            reward, scenario = infer_reward_and_scenario(name)
+            output_path = f"evaluations/{os.path.basename(models_dir)}_results.json"
 
-    print(f"  Results saved: {output_path}")
-    print_comparison_table(results)
+            args.reward = reward
+            args.scenario = scenario
+            args.models_dir = models_dir
+            args.output = output_path
 
+            print(f"\n{'='*60}")
+            print(f"  Running: {name}  (reward={reward}, scenario={scenario})")
+            print(f"{'='*60}")
+
+            results = evaluate(args)
+            output_dir = os.path.dirname(output_path)
+            if output_dir:
+                os.makedirs(output_dir, exist_ok=True)
+            with open(output_path, "w", encoding="utf-8") as f:
+                json.dump(results, f, indent=2)
+
+            all_results[name] = results
+            print_comparison_table(results)
+
+        print("\nAll evaluations complete.")
+    else:   
+        if not args.models_dir:
+            raise ValueError("Provide --models-dir or use --all")
+        results = evaluate(args)
+        output_path = args.output
+        output_dir = os.path.dirname(output_path)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(results, f, indent=2)
+        print(f"  Results saved: {output_path}")
+        print_comparison_table(results)
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrafficMind — Versus</title>
+<style>
+  /* ── Reset & base ─────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0a0c10;
+    --surface:   #111318;
+    --border:    #1e2129;
+    --text:      #e8eaf0;
+    --muted:     #5a5f72;
+    --accent-a:  #00d4ff;   /* cyan  — Agent A */
+    --accent-b:  #ff6b35;   /* amber — Agent B */
+    --green:     #4ade80;
+    --red:       #f87171;
+    --font-mono: 'Courier New', monospace;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ──────────────────────────────────────────────────── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+
+  .logo span { color: var(--accent-a); }
+
+  .status-pill {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.85rem;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    transition: all 0.3s;
+  }
+
+  .status-pill.running  { border-color: var(--green); color: var(--green); }
+  .status-pill.done     { border-color: var(--accent-a); color: var(--accent-a); }
+  .status-pill.error    { border-color: var(--red); color: var(--red); }
+
+  /* ── Main layout ─────────────────────────────────────────────── */
+  main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 0;
+  }
+
+  /* ── Sidebar (controls) ──────────────────────────────────────── */
+  aside {
+    border-right: 1px solid var(--border);
+    padding: 1.5rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    overflow-y: auto;
+  }
+
+  .section-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .control-group { display: flex; flex-direction: column; gap: 0.4rem; }
+
+  label { font-size: 0.78rem; color: var(--muted); }
+
+  select, input[type="number"] {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 0.82rem;
+    padding: 0.5rem 0.65rem;
+    outline: none;
+    transition: border-color 0.2s;
+    appearance: none;
+  }
+
+  select:focus, input[type="number"]:focus {
+    border-color: var(--accent-a);
+  }
+
+  /* Agent A selector gets cyan tint, B gets amber */
+  .agent-a select:focus { border-color: var(--accent-a); }
+  .agent-b select:focus { border-color: var(--accent-b); }
+
+  .agent-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.25rem 0;
+    margin-bottom: 0.35rem;
+  }
+
+  .agent-label.a { color: var(--accent-a); }
+  .agent-label.b { color: var(--accent-b); }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0.25rem 0;
+  }
+
+  #models-dir-a-group, #models-dir-b-group {
+    display: none;
+  }
+
+  /* Launch button */
+  #launch-btn {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--accent-a);
+    color: #000;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    margin-top: auto;
+  }
+
+  #launch-btn:hover   { opacity: 0.88; }
+  #launch-btn:active  { transform: scale(0.98); }
+  #launch-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* ── Scoreboard ──────────────────────────────────────────────── */
+  .content {
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem 2rem;
+    gap: 1.5rem;
+    overflow-y: auto;
+  }
+
+  /* VS banner */
+  .vs-bar {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .agent-name {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .agent-name.a { color: var(--accent-a); }
+  .agent-name.b { color: var(--accent-b); text-align: right; }
+
+  .vs-text {
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  .sim-info {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+
+  /* KPI grid */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .kpi-title {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .kpi-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .kpi-val {
+    font-size: 1.55rem;
+    font-weight: 800;
+    font-family: var(--font-mono);
+    transition: color 0.4s;
+  }
+
+  .kpi-val.a { color: var(--accent-a); text-align: left; }
+  .kpi-val.b { color: var(--accent-b); text-align: right; }
+
+  /* winner highlight */
+  .kpi-val.winner-a { color: var(--green) !important; }
+  .kpi-val.winner-b { color: var(--green) !important; }
+  .kpi-val.loser    { color: var(--muted) !important; }
+
+  .kpi-sep {
+    font-size: 0.75rem;
+    color: var(--border);
+    text-align: center;
+    user-select: none;
+  }
+
+  .kpi-unit {
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-align: center;
+    letter-spacing: 0.06em;
+  }
+
+  /* progress bar diff */
+  .kpi-bar-wrap {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .kpi-bar {
+    position: absolute;
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+
+  .kpi-bar.a { left: 0; background: var(--accent-a); }
+  .kpi-bar.b { right: 0; background: var(--accent-b); }
+
+  /* Winner banner */
+  #winner-banner {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    text-align: center;
+    animation: fadeIn 0.5s ease;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+
+  #winner-banner .winner-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.4rem;
+  }
+
+  #winner-banner .winner-name {
+    font-size: 1.6rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+  }
+
+  #winner-banner .winner-reason {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 0.35rem;
+  }
+
+  /* Idle placeholder */
+  #idle-msg {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    color: var(--muted);
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 3rem;
+  }
+
+  #idle-msg .big { font-size: 3rem; }
+</style>
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────────────────────────────── -->
+<header>
+  <div class="logo">Traffic<span>Mind</span></div>
+  <div class="status-pill" id="status-pill">Idle</div>
+</header>
+
+<!-- ── Main ───────────────────────────────────────────────────────── -->
+<main>
+
+  <!-- Sidebar / Controls -->
+  <aside>
+    <div>
+      <div class="section-label">Agent A</div>
+      <div class="agent-label a">● Agent A</div>
+      <div class="control-group agent-a">
+        <label>Policy</label>
+        <select id="agent-a" onchange="toggleModelsDir('a')">
+          <option value="trained_dqn">Trained DQN</option>
+          <option value="fixed_time">Fixed Time</option>
+          <option value="random_legal">Random Legal</option>
+          <option value="greedy_queue">Greedy Queue</option>
+          <option value="webster_static">Webster Static</option>
+        </select>
+      </div>
+      <div class="control-group" id="models-dir-a-group" style="margin-top:0.5rem">
+        <label>Model folder</label>
+        <select id="models-dir-a"></select>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div>
+      <div class="section-label">Agent B</div>
+      <div class="agent-label b">● Agent B</div>
+      <div class="control-group agent-b">
+        <label>Policy</label>
+        <select id="agent-b" onchange="toggleModelsDir('b')">
+          <option value="fixed_time">Fixed Time</option>
+          <option value="trained_dqn">Trained DQN</option>
+          <option value="random_legal">Random Legal</option>
+          <option value="greedy_queue">Greedy Queue</option>
+          <option value="webster_static">Webster Static</option>
+        </select>
+      </div>
+      <div class="control-group" id="models-dir-b-group" style="margin-top:0.5rem">
+        <label>Model folder</label>
+        <select id="models-dir-b"></select>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div>
+      <div class="section-label">Scenario</div>
+      <div class="control-group">
+        <label>Traffic scenario</label>
+        <select id="scenario">
+          <option value="peak">Peak  (1 500 veh/hr)</option>
+          <option value="off_peak">Off-peak  (600 veh/hr)</option>
+        </select>
+      </div>
+      <div class="control-group" style="margin-top:0.5rem">
+        <label>Reward function</label>
+        <select id="reward">
+          <option value="local">Local</option>
+          <option value="cooperative">Cooperative</option>
+          <option value="fairness">Fairness</option>
+          <option value="pressure_local">Pressure Local</option>
+          <option value="pressure_cooperative">Pressure Cooperative</option>
+          <option value="pressure_fairness">Pressure Fairness</option>
+        </select>
+      </div>
+      <div class="control-group" style="margin-top:0.5rem">
+        <label>Seed</label>
+        <input type="number" id="seed" value="42" min="0">
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <button id="launch-btn" onclick="launch()">▶ Run Versus</button>
+  </aside>
+
+  <!-- Scoreboard -->
+  <div class="content" id="content">
+    <div id="idle-msg">
+      <div class="big">🚦</div>
+      <div>Configure both agents and click <strong>Run Versus</strong></div>
+      <div style="font-size:0.75rem">Two SUMO GUI windows will open — one per agent</div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ── Load model folders on boot ───────────────────────────────────────────────
+async function loadModels() {
+  try {
+    const res = await fetch('/models');
+    const { folders } = await res.json();
+    ['models-dir-a', 'models-dir-b'].forEach(id => {
+      const sel = document.getElementById(id);
+      sel.innerHTML = '';
+      folders.forEach(f => {
+        const opt = document.createElement('option');
+        opt.value = `outputs/${f}`;
+        opt.textContent = f;
+        sel.appendChild(opt);
+      });
+    });
+  } catch(e) {
+    console.warn('Could not load model folders', e);
+  }
+}
+
+function toggleModelsDir(slot) {
+  const val   = document.getElementById(`agent-${slot}`).value;
+  const group = document.getElementById(`models-dir-${slot}-group`);
+  group.style.display = val === 'trained_dqn' ? 'flex' : 'none';
+  if (val === 'trained_dqn') group.style.flexDirection = 'column';
+}
+
+loadModels();
+toggleModelsDir('a');
+toggleModelsDir('b');
+
+// ── Launch ────────────────────────────────────────────────────────────────────
+let ws = null;
+
+async function launch() {
+  const btn = document.getElementById('launch-btn');
+  btn.disabled = true;
+
+  const agentA    = document.getElementById('agent-a').value;
+  const agentB    = document.getElementById('agent-b').value;
+  const modelsDirA = document.getElementById('models-dir-a').value;
+  const modelsDirB = document.getElementById('models-dir-b').value;
+  const scenario  = document.getElementById('scenario').value;
+  const reward    = document.getElementById('reward').value;
+  const seed      = parseInt(document.getElementById('seed').value) || 42;
+
+  // Build scoreboard skeleton
+  buildScoreboard(agentA, agentB);
+  setPill('running', 'Running…');
+
+  // POST to server
+  await fetch('/run', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      agent_a: agentA,
+      models_dir_a: agentA === 'trained_dqn' ? modelsDirA : null,
+      agent_b: agentB,
+      models_dir_b: agentB === 'trained_dqn' ? modelsDirB : null,
+      reward, scenario, seed,
+    }),
+  });
+
+  // Connect WebSocket
+  if (ws) ws.close();
+  ws = new WebSocket(`ws://${location.host}/ws`);
+
+  ws.onmessage = (evt) => {
+    const msg = JSON.parse(evt.data);
+    if (msg.finished) {
+      updateScoreboard(msg.a, msg.b, true);
+      setPill('done', 'Done');
+      btn.disabled = false;
+      ws.close();
+      return;
+    }
+    updateScoreboard(msg.a, msg.b, false);
+  };
+
+  ws.onerror = () => {
+    setPill('error', 'WS Error');
+    btn.disabled = false;
+  };
+}
+
+// ── Scoreboard build ──────────────────────────────────────────────────────────
+const KPI_CONFIG = [
+  { key: 'mean_waiting_time',  label: 'Avg Wait Time',     unit: 'seconds',   lowerBetter: true  },
+  { key: 'total_waiting_time', label: 'Total Wait (avg/step)', unit: 'seconds', lowerBetter: true },
+  { key: 'mean_queue_length',  label: 'Avg Queue Length',  unit: 'vehicles',  lowerBetter: true  },
+  { key: 'throughput',         label: 'Throughput',        unit: 'vehicles',  lowerBetter: false },
+  { key: 'switch_count',       label: 'Phase Switches',    unit: 'total',     lowerBetter: true  },
+  { key: 'max_lane_wait',      label: 'Max Lane Wait',     unit: 'seconds',   lowerBetter: true  },
+];
+
+let agentALabel = '', agentBLabel = '';
+
+function agentDisplayName(key) {
+  return {
+    trained_dqn:    'Trained DQN',
+    fixed_time:     'Fixed Time',
+    random_legal:   'Random Legal',
+    greedy_queue:   'Greedy Queue',
+    webster_static: 'Webster Static',
+  }[key] || key;
+}
+
+function buildScoreboard(agentA, agentB) {
+  agentALabel = agentDisplayName(agentA);
+  agentBLabel = agentDisplayName(agentB);
+
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div class="vs-bar">
+      <div class="agent-name a" id="name-a">${agentALabel}</div>
+      <div class="vs-text">VS</div>
+      <div class="agent-name b" id="name-b">${agentBLabel}</div>
+    </div>
+    <div class="sim-info" id="sim-info">Waiting for simulation…</div>
+    <div class="kpi-grid" id="kpi-grid"></div>
+    <div id="winner-banner"></div>
+  `;
+
+  const grid = document.getElementById('kpi-grid');
+  KPI_CONFIG.forEach(kpi => {
+    grid.innerHTML += `
+      <div class="kpi-card" id="card-${kpi.key}">
+        <div class="kpi-title">${kpi.label}</div>
+        <div class="kpi-row">
+          <div class="kpi-val a" id="val-a-${kpi.key}">—</div>
+          <div class="kpi-sep">|</div>
+          <div class="kpi-val b" id="val-b-${kpi.key}">—</div>
+        </div>
+        <div class="kpi-bar-wrap">
+          <div class="kpi-bar a" id="bar-a-${kpi.key}" style="width:50%"></div>
+          <div class="kpi-bar b" id="bar-b-${kpi.key}" style="width:50%"></div>
+        </div>
+        <div class="kpi-unit">${kpi.unit}</div>
+      </div>
+    `;
+  });
+}
+
+function updateScoreboard(dataA, dataB, finished) {
+  if (!dataA && !dataB) return;
+
+  // Sim time info
+  const simInfo = document.getElementById('sim-info');
+  if (simInfo) {
+    const step  = dataA?.step  ?? dataB?.step  ?? 0;
+    const stime = dataA?.sim_time ?? dataB?.sim_time ?? 0;
+    simInfo.textContent = `Step ${step}  ·  Sim time ${stime.toFixed(0)}s`;
+  }
+
+  KPI_CONFIG.forEach(kpi => {
+    const vA = dataA?.[kpi.key] ?? null;
+    const vB = dataB?.[kpi.key] ?? null;
+
+    const elA = document.getElementById(`val-a-${kpi.key}`);
+    const elB = document.getElementById(`val-b-${kpi.key}`);
+    const barA = document.getElementById(`bar-a-${kpi.key}`);
+    const barB = document.getElementById(`bar-b-${kpi.key}`);
+
+    if (!elA || !elB) return;
+
+    elA.textContent = vA !== null ? fmt(vA) : '—';
+    elB.textContent = vB !== null ? fmt(vB) : '—';
+
+    // Progress bars
+    if (vA !== null && vB !== null && (vA + vB) > 0) {
+      const total = vA + vB;
+      barA.style.width = `${(vA / total * 100).toFixed(1)}%`;
+      barB.style.width = `${(vB / total * 100).toFixed(1)}%`;
+    }
+
+    // Winner colouring on finish
+    if (finished && vA !== null && vB !== null) {
+      const aWins = kpi.lowerBetter ? vA < vB : vA > vB;
+      const bWins = kpi.lowerBetter ? vB < vA : vB > vA;
+      elA.classList.remove('winner-a','loser');
+      elB.classList.remove('winner-b','loser');
+      if (aWins)       { elA.classList.add('winner-a'); elB.classList.add('loser'); }
+      else if (bWins)  { elB.classList.add('winner-b'); elA.classList.add('loser'); }
+    }
+  });
+
+  // Overall winner banner
+  if (finished) showWinner(dataA, dataB);
+}
+
+function showWinner(dataA, dataB) {
+  if (!dataA || !dataB) return;
+  let scoreA = 0, scoreB = 0;
+
+  KPI_CONFIG.forEach(kpi => {
+    const vA = dataA[kpi.key], vB = dataB[kpi.key];
+    if (vA == null || vB == null) return;
+    if (kpi.lowerBetter) { if (vA < vB) scoreA++; else if (vB < vA) scoreB++; }
+    else                  { if (vA > vB) scoreA++; else if (vB > vA) scoreB++; }
+  });
+
+  const banner = document.getElementById('winner-banner');
+  banner.style.display = 'block';
+
+  if (scoreA === scoreB) {
+    banner.innerHTML = `
+      <div class="winner-label">Result</div>
+      <div class="winner-name" style="color:var(--muted)">Draw</div>
+      <div class="winner-reason">${agentALabel} ${scoreA} – ${scoreB} ${agentBLabel}</div>
+    `;
+  } else {
+    const winner = scoreA > scoreB ? agentALabel : agentBLabel;
+    const color  = scoreA > scoreB ? 'var(--accent-a)' : 'var(--accent-b)';
+    const ratio  = scoreA > scoreB ? `${scoreA}–${scoreB}` : `${scoreB}–${scoreA}`;
+    banner.innerHTML = `
+      <div class="winner-label">🏆 Winner</div>
+      <div class="winner-name" style="color:${color}">${winner}</div>
+      <div class="winner-reason">Won ${ratio} KPIs</div>
+    `;
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function fmt(v) {
+  if (v === null || v === undefined) return '—';
+  if (Number.isInteger(v) || Math.abs(v) >= 100) return Math.round(v).toLocaleString();
+  return v.toFixed(2);
+}
+
+function setPill(cls, text) {
+  const pill = document.getElementById('status-pill');
+  pill.className = `status-pill ${cls}`;
+  pill.textContent = text;
+}
+</script>
+</body>
+</html>

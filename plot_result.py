@@ -7,23 +7,29 @@ import matplotlib.ticker as ticker
 
 OUTPUT_DIR = "output_plots"
 
-# WRITE THE FOLDER HERE
-local_peak              = "outputs/local_peak_final/results.json"
-cooperative_peak        = "outputs/cooperative_peak_final/results.json" 
-fairness_peak           = "outputs/fairness_peak_final/results.json"
-local_off_peak          = "outputs/local_off_peak_final/results.json"
-cooperative_off_peak    = "outputs/cooperative_off_peak_final/results.json"
-fairness_off_peak       = "outputs/fairness_off_peak_final/results.json"
+'''
+TODO 
+1. make 3 graph to compare pressure local, with original local, do this for all 3 reward system
+2. write all the file directory above
+3. 
+'''
 
 PATHS = {
-    "Local":                local_peak,
-    "Cooperative":          cooperative_peak,
-    "Fairness":             fairness_peak,
-    "Local_OffPeak":        local_off_peak,
-    "Cooperative_OffPeak":  cooperative_off_peak,
-    "Fairness_OffPeak":     fairness_off_peak,
+    "Local":                        "outputs/local_peak/results.json",
+    "Cooperative":                  "outputs/cooperative_peak/results.json",
+    "Fairness":                     "outputs/fairness_peak/results.json",
+    "Local_OffPeak":                "outputs/local_off_peak/results.json",
+    "Cooperative_OffPeak":          "outputs/cooperative_off_peak/results.json",
+    "Fairness_OffPeak":             "outputs/fairness_off_peak/results.json",
+    
+    "Pressure_Local":               "outputs/pressure_local_peak/results.json",
+    "Pressure_Cooperative":         "outputs/pressure_cooperative_peak/results.json",
+    "Pressure_Fairness":            "outputs/pressure_fairness_peak/results.json",
+    "Pressure_Local_OffPeak":       "outputs/pressure_local_off_peak/results.json",
+    "Pressure_Cooperative_OffPeak": "outputs/pressure_cooperative_off_peak/results.json",
+    "Pressure_Fairness_OffPeak":    "outputs/pressure_fairness_off_peak/results.json",
 }
- 
+
 COLORS = {
     "Local":       "#4C9BE8",
     "Cooperative": "#E8774C",
@@ -31,6 +37,13 @@ COLORS = {
     "Local_OffPeak":        "#1A5FA8",
     "Cooperative_OffPeak":  "#A83A10",
     "Fairness_OffPeak":     "#1A9B5F",
+
+    "Pressure_Local":          "#9BC7F5",
+    "Pressure_Cooperative":    "#F5B39B",
+    "Pressure_Fairness":       "#9BF5C7",
+    "Pressure_Local_OffPeak":       "#5F8FD6",
+    "Pressure_Cooperative_OffPeak": "#D67A5F",
+    "Pressure_Fairness_OffPeak":    "#5FD69B",
 }
 
 
@@ -91,7 +104,6 @@ def plot_loss_normalized(data: dict[str, dict]) -> None:
     plt.close(fig)
 
 
-
 SMOOTH_WINDOW = 20 
 
 def load(path: str) -> dict:
@@ -108,9 +120,8 @@ def smooth(values: list, window: int) -> np.ndarray:
     return np.concatenate([np.full(pad, np.nan), smoothed])
 
 
-def plot_rewards(data: dict[str, dict]) -> None:
+def plot_rewards(data: dict[str, dict], filename:str) -> None:
     labels = list(data.keys())
-    n = len(labels)
     fig, axes = plt.subplots(2, 3, figsize=(18, 10), sharey=False)
     axes_flat = axes.flatten()
 
@@ -133,8 +144,8 @@ def plot_rewards(data: dict[str, dict]) -> None:
     fig.suptitle("Training Reward per Reward Function\n(not comparable across subplots — different equations)",
                     fontsize=12, y=1.02)
     fig.tight_layout()
-    fig.savefig(os.path.join(OUTPUT_DIR, "rewards.png"), dpi=150, bbox_inches="tight")
-    print("  Saved: rewards.png")
+    fig.savefig(os.path.join(OUTPUT_DIR, filename), dpi=150, bbox_inches="tight")
+    print("  Saved: ", filename)
     plt.close(fig)
  
  
@@ -160,7 +171,7 @@ def plot_loss(data: dict[str, dict]) -> None:
     ax.set_title("Training Loss — All Reward Functions", fontsize=14, fontweight="bold", pad=12)
     ax.set_xlabel("Episode", fontsize=11)
     ax.set_ylabel("MSE Loss", fontsize=11)
-    ax.legend(fontsize=10)
+    ax.legend(fontsize=5)
     ax.grid(True, alpha=0.3, linestyle="--")
     ax.xaxis.set_minor_locator(ticker.AutoMinorLocator())
     fig.tight_layout()
@@ -182,9 +193,25 @@ def main():
     if not data:
         print("No data loaded, exiting.")
         return
+    
+    original_reward = {
+        k: v for k, v in data.items()
+        if not k.startswith('Pressure')
+    }
+
+    pressure_reward = {
+        k: v for k, v in data.items()
+        if k.startswith("Pressure")
+    }
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    plot_rewards(data)
+    # plot the original reward system
+    plot_rewards(original_reward, 'rewards_original.png')
+
+    # plot the pressure reward system
+    plot_rewards(pressure_reward, 'rewards_pressure.png')
+
+    # plot all the loss
     plot_loss(data)
     plot_rewards_normalized(data)
     plot_loss_normalized(data)
