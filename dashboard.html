@@ -189,7 +189,7 @@
   .agent-name.b { color: var(--accent-b); text-align: right; }
 
   .vs-text {
-    font-size: 1.4rem;
+    font-size: 1.8rem;
     font-weight: 900;
     color: var(--muted);
     letter-spacing: 0.05em;
@@ -221,12 +221,19 @@
   }
 
   .kpi-title {
-    font-size: 0.65rem;
+    font-size: 2rem;
     font-weight: 700;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--muted);
+    color: var(--text);
     text-align: center;
+  }
+
+  .kpi-desc {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text);
+    text-align: center; 
   }
 
   .kpi-row {
@@ -519,12 +526,12 @@ async function launch() {
 
 // ── Scoreboard build ──────────────────────────────────────────────────────────
 const KPI_CONFIG = [
-  { key: 'mean_waiting_time',  label: 'Avg Wait Time',     unit: 'seconds',   lowerBetter: true  },
-  { key: 'total_waiting_time', label: 'Total Wait (avg/step)', unit: 'seconds', lowerBetter: true },
-  { key: 'mean_queue_length',  label: 'Avg Queue Length',  unit: 'vehicles',  lowerBetter: true  },
-  { key: 'throughput',         label: 'Throughput',        unit: 'vehicles',  lowerBetter: false },
-  { key: 'switch_count',       label: 'Phase Switches',    unit: 'total',     lowerBetter: true  },
-  { key: 'max_lane_wait',      label: 'Max Lane Wait',     unit: 'seconds',   lowerBetter: true  },
+  { key: 'mean_waiting_time',  label: 'Avg Wait Time',        desc:'',unit: 'seconds',   lowerBetter: true  },
+  { key: 'total_waiting_time', label: 'Total Wait (avg/step)',desc:'',unit: 'seconds', lowerBetter: true },
+  { key: 'mean_queue_length',  label: 'Avg Queue Length',     desc:'',unit: 'vehicles',  lowerBetter: true  },
+  { key: 'throughput',         label: 'Throughput',           desc:'',unit: 'vehicles',  lowerBetter: false },
+  { key: 'switch_count',       label: 'Phase Switches',       desc:'',unit: 'total',     lowerBetter: true  },
+  { key: 'max_lane_wait',      label: 'Max Lane Wait',        desc:'',unit: 'seconds',   lowerBetter: true  },
 ];
 
 let agentALabel = '', agentBLabel = '';
@@ -560,6 +567,7 @@ function buildScoreboard(agentA, agentB) {
     grid.innerHTML += `
       <div class="kpi-card" id="card-${kpi.key}">
         <div class="kpi-title">${kpi.label}</div>
+        <div class="kpi-card">${kpi.desc}</div>
         <div class="kpi-row">
           <div class="kpi-val a" id="val-a-${kpi.key}">—</div>
           <div class="kpi-sep">|</div>
