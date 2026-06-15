@@ -473,5 +473,32 @@ def main():
 if __name__ == "__main__":
     main()
 
+'''
+  mean_waiting_time:
+   Mean wait time of actively waiting vehicles only (wait > 0), averaged across all steps.
+   Each step: np.mean of [getWaitingTime(vid) for vid if wait > 0]. Then divided by step_count.
+   !IMPORTANT: Current trained model in drive currently measure mean wait time of ALL vehicle INCLUDING those not waiting.
+
+ total_waiting_time:
+   Sum of lane.getWaitingTime() across all 16 lanes (4 junctions × 4 lanes) per step,
+   averaged across all steps. Lane-level, not vehicle-level.
+
+ mean_queue_length:
+   Average halting vehicles per lane (lane_queue_total / 16 lanes) per step,
+   averaged across all steps. Uses getLastStepHaltingNumber() per lane.
+
+ throughput:
+   Cumulative total of vehicles that fully exited the simulation (getArrivedNumber()),
+   summed across all steps. No averaging.
+
+ switch_count (switch_count_total):
+   Total executed phase switches across all 4 junctions for the episode.
+   Only counts executed_actions == 1. Blocked switches (min green not met) are NOT counted.
+
+ max_lane_wait:
+   Single highest lane.getWaitingTime() ever recorded across all 16 lanes
+   at any point in the episode. Running max, no averaging.
+'''
+
 # python evaluate.py --models-dir "outputs/fairness_peak_final" --scenario peak --reward fairness
 # python evaluate.py --models-dir "outputs/fairness_off_peak_final" --scenario off_peak --reward fairness

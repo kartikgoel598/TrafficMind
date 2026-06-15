@@ -195,23 +195,30 @@ def main():
     states = env.reset()
     done = False
 
+    from collections import deque
     # Running totals
+    wait_window = deque(maxlen=50)
+    queue_window = deque(maxlen=50)
+    wait_total_window = deque(maxlen=50)
     total_waiting_time = 0.0
     total_throughput   = 0
     switch_count       = 0
     step_count         = 0
     max_lane_wait_seen = 0.0
 
+
     while not done:
         actions = select(states)
         states, rewards, done, executed = env.step(actions)
         kpis = env.get_kpis()
 
+        wait_window.append(kpis['mean_waiting_time'])
+        queue_window.append(kpis['mean_queue_length'])
+        wait_total_window.append(kpis['total_waiting_time'])
+
         step_count         += 1
         switch_count       += int(sum(executed.values()))
-        total_waiting_time += kpis["total_waiting_time"]
         total_throughput   += kpis["throughput_step"]
-        max_lane_wait_seen  = max(max_lane_wait_seen, kpis["max_lane_wait"])
 
         write_live(args.live_file, {
             "status": "running",
@@ -222,12 +229,12 @@ def main():
             "step": step_count,
             "sim_time": kpis["sim_time"],
             # live per-step metrics
-            "mean_waiting_time":   round(kpis["mean_waiting_time"], 2),
-            "total_waiting_time":  round(total_waiting_time / max(1, step_count), 2),
-            "mean_queue_length":   round(kpis["mean_queue_length"], 2),
-            "max_lane_wait":       round(max_lane_wait_seen, 2),
-            "throughput":          total_throughput,
-            "switch_count":        switch_count,
+            "mean_waiting_time":    round(float(np.mean(wait_window)), 2),
+            "mean_queue_length":    round(float(np.mean(queue_window)), 2),
+            "total_waiting_time":   round(float(np.mean(wait_total_window)), 2),
+            "max_lane_wait":        round(kpis["max_lane_wait"], 2),
+            "throughput":           total_throughput,
+            "switch_count":         switch_count,
         })
 
     # ── Final state ───────────────────────────────────────────────────────────

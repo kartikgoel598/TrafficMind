@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TrafficMind — Versus</title>
+<title>TrafficMind Demo</title>
 <style>
   /* ── Reset & base ─────────────────────────────────────────────── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -432,7 +432,7 @@
     <div id="idle-msg">
       <div class="big">🚦</div>
       <div>Configure both agents and click <strong>Run Versus</strong></div>
-      <div style="font-size:0.75rem">Two SUMO GUI windows will open — one per agent</div>
+      <div style="font-size:0.75rem">Two SUMO GUI windows will open - one per agent</div>
     </div>
   </div>
 
@@ -526,9 +526,9 @@ async function launch() {
 
 // ── Scoreboard build ──────────────────────────────────────────────────────────
 const KPI_CONFIG = [
-  { key: 'mean_waiting_time',  label: 'Avg Wait Time',        desc:'',unit: 'seconds',   lowerBetter: true  },
-  { key: 'total_waiting_time', label: 'Total Wait (avg/step)',desc:'',unit: 'seconds', lowerBetter: true },
-  { key: 'mean_queue_length',  label: 'Avg Queue Length',     desc:'',unit: 'vehicles',  lowerBetter: true  },
+  { key: 'mean_waiting_time',  label: 'Avg Wait Time',        desc:'Mean wait time of actively waiting vehicles only (wait > 0), averaged across all steps',unit: 'seconds',   lowerBetter: true  },
+  { key: 'total_waiting_time', label: 'Total Wait (avg/step)',desc:'Sum of waiting time across all 16 lanes per step, averaged across all steps',unit: 'seconds', lowerBetter: true },
+  { key: 'mean_queue_length',  label: 'Avg Queue Length',     desc:'Average number of halting vehicles per lane (across 16 lanes), averaged across all steps',unit: 'vehicles',  lowerBetter: true  },
   { key: 'throughput',         label: 'Throughput',           desc:'',unit: 'vehicles',  lowerBetter: false },
   { key: 'switch_count',       label: 'Phase Switches',       desc:'',unit: 'total',     lowerBetter: true  },
   { key: 'max_lane_wait',      label: 'Max Lane Wait',        desc:'',unit: 'seconds',   lowerBetter: true  },

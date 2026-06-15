@@ -1,1 +1,1 @@
-{"status": "running", "agent": "trained_dqn", "slot": "a", "seed": 42, "scenario": "off_peak", "step": 0, "sim_time": 0.0, "mean_waiting_time": 0.0, "total_waiting_time": 0.0, "mean_queue_length": 0.0, "max_lane_wait": 0.0, "throughput": 0, "switch_count": 0}
+{"status": "done", "agent": "trained_dqn", "slot": "a", "seed": 42, "scenario": "peak", "step": 900, "sim_time": 0.0, "mean_waiting_time": 0.0, "total_waiting_time": 0.0, "mean_queue_length": 0.0, "max_lane_wait": 0.0, "throughput": 364, "switch_count": 195}

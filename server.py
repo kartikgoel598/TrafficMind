@@ -1,11 +1,9 @@
 """
-server.py — FastAPI backend for the TrafficMind versus dashboard.
+server.py FastAPI backend for the TrafficMind dashboard.
 
 Start with:
-    uvicorn server:app --reload --port 8000
+    uvicorn server:app --port 8080
 
-Then open:
-    http://localhost:8000
 """
 
 import asyncio
