@@ -240,6 +240,7 @@ def train(args):
             states = next_states
             step_count += 1
             step_kpis = env.get_kpis()
+            # IMPORTANT the current model saved in drive mean_wait_time also include car that is not waiting which significantly reduce the value.
             kpi_sum['mean_waiting_time'] += step_kpis['mean_waiting_time']
             kpi_sum['total_waiting_time'] += step_kpis['total_waiting_time']
             kpi_sum['mean_queue_length'] += step_kpis['mean_queue_length']

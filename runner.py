@@ -195,16 +195,16 @@ def main():
     states = env.reset()
     done = False
 
-    from collections import deque
-    # Running totals
-    wait_window = deque(maxlen=50)
-    queue_window = deque(maxlen=50)
-    wait_total_window = deque(maxlen=50)
-    total_waiting_time = 0.0
     total_throughput   = 0
     switch_count       = 0
     step_count         = 0
     max_lane_wait_seen = 0.0
+    last_kpis          = {}
+
+    # 3 main variable to decide which model perform the best and also max lane wait (winner)
+    cum_mean_wait = 0.0
+    cum_mean_queue = 0.0
+    cum_total_wait = 0.0
 
 
     while not done:
@@ -212,13 +212,15 @@ def main():
         states, rewards, done, executed = env.step(actions)
         kpis = env.get_kpis()
 
-        wait_window.append(kpis['mean_waiting_time'])
-        queue_window.append(kpis['mean_queue_length'])
-        wait_total_window.append(kpis['total_waiting_time'])
-
         step_count         += 1
         switch_count       += int(sum(executed.values()))
         total_throughput   += kpis["throughput_step"]
+        max_lane_wait_seen = max(max_lane_wait_seen, kpis['max_lane_wait'])
+        last_kpis          = kpis
+
+        cum_mean_wait += kpis['mean_waiting_time']
+        cum_mean_queue += kpis['mean_queue_length']
+        cum_total_wait += kpis['total_waiting_time']
 
         write_live(args.live_file, {
             "status": "running",
@@ -229,15 +231,16 @@ def main():
             "step": step_count,
             "sim_time": kpis["sim_time"],
             # live per-step metrics
-            "mean_waiting_time":    round(float(np.mean(wait_window)), 2),
-            "mean_queue_length":    round(float(np.mean(queue_window)), 2),
-            "total_waiting_time":   round(float(np.mean(wait_total_window)), 2),
-            "max_lane_wait":        round(kpis["max_lane_wait"], 2),
+            "mean_waiting_time":    round(kpis["mean_waiting_time"], 2),
+            "mean_queue_length":    round(kpis["mean_queue_length"], 2),
+            "total_waiting_time":   round(kpis["total_waiting_time"], 2),
+            "max_lane_wait":        round(max_lane_wait_seen, 2),
             "throughput":           total_throughput,
             "switch_count":         switch_count,
         })
 
     # ── Final state ───────────────────────────────────────────────────────────
+    n = max(1, step_count)
     write_live(args.live_file, {
         "status": "done",
         "agent": args.agent,
@@ -246,12 +249,19 @@ def main():
         "scenario": args.scenario,
         "step": step_count,
         "sim_time": 0.0,
-        "mean_waiting_time":   0.0,
-        "total_waiting_time":  round(total_waiting_time / max(1, step_count), 2),
-        "mean_queue_length":   0.0,
+
+        # last snapshot for cards
+        "mean_waiting_time":   round(last_kpis.get("mean_waiting_time", 0.0), 2),
+        "mean_queue_length":   round(last_kpis.get("mean_queue_length", 0.0), 2),
+        "total_waiting_time":  round(last_kpis.get("total_waiting_time", 0.0), 2),
         "max_lane_wait":       round(max_lane_wait_seen, 2),
         "throughput":          total_throughput,
         "switch_count":        switch_count,
+
+        # episode averages for winner
+        "avg_mean_wait":       round(cum_mean_wait / n, 2),
+        "avg_mean_queue":      round(cum_mean_queue / n, 2),
+        "avg_total_wait":      round(cum_total_wait / n, 2),
     })
 
     env.close()

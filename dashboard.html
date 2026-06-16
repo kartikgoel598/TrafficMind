@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TrafficMind Demo</title>
+
 <style>
   /* ── Reset & base ─────────────────────────────────────────────── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -14,8 +15,8 @@
     --border:    #1e2129;
     --text:      #e8eaf0;
     --muted:     #5a5f72;
-    --accent-a:  #00d4ff;   /* cyan  — Agent A */
-    --accent-b:  #ff6b35;   /* amber — Agent B */
+    --accent-a:  #00f719;   /* cyan  — Agent A */
+    --accent-b:  #b800fb;   /* amber — Agent B */
     --green:     #4ade80;
     --red:       #f87171;
     --font-mono: 'Courier New', monospace;
@@ -324,6 +325,105 @@
     margin-top: 0.35rem;
   }
 
+  #episode-summary {
+    display: none;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.25rem 1.5rem;
+    animation: fadeIn 0.6s ease;
+  }
+
+  #episode-summary .summary-header {
+    font-size: 0.65rem; font-weight: 700; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 1rem;
+  }
+
+  .summary-table { width: 100%; border-collapse: collapse; }
+
+  .summary-table th {
+    font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted);
+    padding: 0.4rem 0.75rem; text-align: right;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .summary-table th:first-child { text-align: left; }
+  .summary-table th.col-a { color: var(--accent-a); }
+  .summary-table th.col-b { color: var(--accent-b); }
+
+  .summary-table td {
+    font-size: 0.82rem; font-family: var(--font-mono);
+    padding: 0.55rem 0.75rem; text-align: right;
+    border-bottom: 1px solid var(--border); color: var(--text);
+  }
+
+  .summary-table td:first-child {
+    text-align: left; font-family: inherit;
+    font-size: 0.78rem; color: var(--muted);
+  }
+
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table td.win  { color: var(--green); font-weight: 700; }
+  .summary-table td.lose { color: var(--muted); }
+
+  .summary-note {
+    font-size: 0.68rem; color: var(--muted);
+    margin-top: 0.85rem; text-align: center; font-style: italic;
+  }
+
+  #bar-chart-summary {
+  display: none;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 1.25rem 1.5rem;
+  animation: fadeIn 0.6s ease;
+  }
+
+  #bar-chart-summary .summary-header {
+    font-size: 0.65rem; font-weight: 700; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 1rem;
+  }
+  .bar-chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .bar-chart-item {
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .bar-chart-item-title {
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .bar-chart-item-unit {
+    font-size: 0.6rem; color: var(--muted);
+  }
+  .bar-group { display: flex; flex-direction: column; gap: 0.35rem; }
+  .bar-row { display: flex; align-items: center; gap: 0.6rem; }
+  .bar-row-label {
+    font-size: 0.68rem; font-family: var(--font-mono);
+    width: 2.5rem; text-align: right; flex-shrink: 0;
+  }
+  .bar-row-label.a { color: var(--accent-a); }
+  .bar-row-label.b { color: var(--accent-b); }
+  .bar-track {
+    flex: 1; height: 18px; background: var(--border);
+    border-radius: 3px; overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%; border-radius: 3px;
+    transition: width 0.6s ease;
+  }
+  .bar-fill.a { background: var(--accent-a); }
+  .bar-fill.b { background: var(--accent-b); }
+  .bar-fill.win-a { background: var(--green); }
+  .bar-fill.win-b { background: var(--green); }
+  .bar-value {
+    font-size: 0.7rem; font-family: var(--font-mono);
+    width: 3.5rem; flex-shrink: 0;
+  }
+  .bar-value.a { color: var(--accent-a); }
+  .bar-value.b { color: var(--accent-b); }
+  .bar-value.win { color: var(--green); font-weight: 700; }
+
   /* Idle placeholder */
   #idle-msg {
     flex: 1;
@@ -525,13 +625,22 @@ async function launch() {
 }
 
 // ── Scoreboard build ──────────────────────────────────────────────────────────
-const KPI_CONFIG = [
-  { key: 'mean_waiting_time',  label: 'Avg Wait Time',        desc:'Mean wait time of actively waiting vehicles only (wait > 0), averaged across all steps',unit: 'seconds',   lowerBetter: true  },
-  { key: 'total_waiting_time', label: 'Total Wait (avg/step)',desc:'Sum of waiting time across all 16 lanes per step, averaged across all steps',unit: 'seconds', lowerBetter: true },
-  { key: 'mean_queue_length',  label: 'Avg Queue Length',     desc:'Average number of halting vehicles per lane (across 16 lanes), averaged across all steps',unit: 'vehicles',  lowerBetter: true  },
-  { key: 'throughput',         label: 'Throughput',           desc:'',unit: 'vehicles',  lowerBetter: false },
-  { key: 'switch_count',       label: 'Phase Switches',       desc:'',unit: 'total',     lowerBetter: true  },
-  { key: 'max_lane_wait',      label: 'Max Lane Wait',        desc:'',unit: 'seconds',   lowerBetter: true  },
+const LIVE_KPI_CONFIG = [
+  { key: 'mean_waiting_time',  label: 'Avg Wait Time',        desc:'Mean wait of halted vehicle this step', unit: 'seconds',  lowerBetter: true  },
+  { key: 'total_waiting_time', label: 'Lane Wait Sum',        desc:'Sum of waiting time across all 16 lanes this step',unit: 'seconds',  lowerBetter: true  },
+  { key: 'mean_queue_length',  label: 'Avg Queue Length',     desc:'Mean halting vehicles per lane across all 16 lanes',unit: 'vehicles', lowerBetter: true  },
+  { key: 'throughput',         label: 'Throughput',           desc:'Cumulative vehicles that have exited the network',unit: 'vehicles', lowerBetter: false },
+  { key: 'switch_count',       label: 'Phase Switches',       desc:'Cumulative signal phase changes executed',unit: 'total',    lowerBetter: true  },
+  { key: 'max_lane_wait',      label: 'Max Lane Wait (seen)', desc:'Highest single-lane wait seen so far this episode',unit: 'seconds',  lowerBetter: true  },
+];
+
+const SUMMARY_KPI_CONFIG = [
+  { key: 'avg_mean_wait',  label: 'Avg Wait Time (episode mean)',    unit: 's',   lowerBetter: true  },
+  { key: 'avg_mean_queue', label: 'Avg Queue Length (episode mean)', unit: 'veh', lowerBetter: true  },
+  { key: 'avg_total_wait', label: 'Lane Wait Sum (episode mean)',    unit: 's',   lowerBetter: true  },
+  { key: 'throughput',     label: 'Total Throughput',                unit: 'veh', lowerBetter: false },
+  { key: 'max_lane_wait',  label: 'Max Lane Wait (episode peak)',    unit: 's',   lowerBetter: true  },
+  { key: 'switch_count',   label: 'Total Phase Switches',            unit: '',    lowerBetter: true  },
 ];
 
 let agentALabel = '', agentBLabel = '';
@@ -560,14 +669,16 @@ function buildScoreboard(agentA, agentB) {
     <div class="sim-info" id="sim-info">Waiting for simulation…</div>
     <div class="kpi-grid" id="kpi-grid"></div>
     <div id="winner-banner"></div>
+    <div id="episode-summary"></div>
+    <div id="bar-chart-summary"></div>
   `;
 
   const grid = document.getElementById('kpi-grid');
-  KPI_CONFIG.forEach(kpi => {
+  LIVE_KPI_CONFIG.forEach(kpi => {
     grid.innerHTML += `
       <div class="kpi-card" id="card-${kpi.key}">
         <div class="kpi-title">${kpi.label}</div>
-        <div class="kpi-card">${kpi.desc}</div>
+        <div class="kpi-desc">${kpi.desc}</div>
         <div class="kpi-row">
           <div class="kpi-val a" id="val-a-${kpi.key}">—</div>
           <div class="kpi-sep">|</div>
@@ -594,7 +705,7 @@ function updateScoreboard(dataA, dataB, finished) {
     simInfo.textContent = `Step ${step}  ·  Sim time ${stime.toFixed(0)}s`;
   }
 
-  KPI_CONFIG.forEach(kpi => {
+  LIVE_KPI_CONFIG.forEach(kpi => {
     const vA = dataA?.[kpi.key] ?? null;
     const vB = dataB?.[kpi.key] ?? null;
 
@@ -627,14 +738,18 @@ function updateScoreboard(dataA, dataB, finished) {
   });
 
   // Overall winner banner
-  if (finished) showWinner(dataA, dataB);
+  if (finished) {
+    showWinner(dataA, dataB);
+    showEpisodeSummary(dataA, dataB);  // ADD this line
+    showBarCharts(dataA, dataB);
+  }
 }
 
 function showWinner(dataA, dataB) {
   if (!dataA || !dataB) return;
   let scoreA = 0, scoreB = 0;
 
-  KPI_CONFIG.forEach(kpi => {
+  SUMMARY_KPI_CONFIG.forEach(kpi => {
     const vA = dataA[kpi.key], vB = dataB[kpi.key];
     if (vA == null || vB == null) return;
     if (kpi.lowerBetter) { if (vA < vB) scoreA++; else if (vB < vA) scoreB++; }
@@ -655,11 +770,103 @@ function showWinner(dataA, dataB) {
     const color  = scoreA > scoreB ? 'var(--accent-a)' : 'var(--accent-b)';
     const ratio  = scoreA > scoreB ? `${scoreA}–${scoreB}` : `${scoreB}–${scoreA}`;
     banner.innerHTML = `
-      <div class="winner-label">🏆 Winner</div>
+      <div class="winner-label">Winner</div>
       <div class="winner-name" style="color:${color}">${winner}</div>
-      <div class="winner-reason">Won ${ratio} KPIs</div>
+      <div class="winner-reason">Won ${ratio} episode KPIs</div>
     `;
   }
+}
+
+function showEpisodeSummary(dataA, dataB) {
+  const el = document.getElementById('episode-summary');
+  if (!el) return;
+
+  let rows = '';
+  SUMMARY_KPI_CONFIG.forEach(kpi => {
+    const vA = dataA?.[kpi.key] ?? null;
+    const vB = dataB?.[kpi.key] ?? null;
+    if (vA === null && vB === null) return;
+
+    const aWins = vA !== null && vB !== null && (kpi.lowerBetter ? vA < vB : vA > vB);
+    const bWins = vA !== null && vB !== null && (kpi.lowerBetter ? vB < vA : vB > vA);
+    const suffix = kpi.unit ? ` ${kpi.unit}` : '';
+
+    rows += `
+      <tr>
+        <td>${kpi.label}</td>
+        <td class="${aWins ? 'win' : bWins ? 'lose' : ''}">${vA !== null ? fmt(vA) + suffix : '—'}</td>
+        <td class="${bWins ? 'win' : aWins ? 'lose' : ''}">${vB !== null ? fmt(vB) + suffix : '—'}</td>
+      </tr>
+    `;
+  });
+
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div class="summary-header">Episode Summary - why this winner?</div>
+    <table class="summary-table">
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th class="col-a">${agentALabel}</th>
+          <th class="col-b">${agentBLabel}</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="summary-note">
+      Averages computed across all simulation steps. Winner decided on these values, not the live snapshot cards above.
+    </div>
+  `;
+}
+
+function showBarCharts(dataA, dataB) {
+  const el = document.getElementById('bar-chart-summary');
+  if (!el) return;
+
+  let charts = '';
+  SUMMARY_KPI_CONFIG.forEach(kpi => {
+    const vA = dataA?.[kpi.key] ?? null;
+    const vB = dataB?.[kpi.key] ?? null;
+    if (vA === null || vB === null) return;
+
+    const max = Math.max(vA, vB);
+    if (max === 0) return;
+
+    const aWins = kpi.lowerBetter ? vA < vB : vA > vB;
+    const bWins = kpi.lowerBetter ? vB < vA : vB > vA;
+
+    const pctA = ((vA / max) * 100).toFixed(1);
+    const pctB = ((vB / max) * 100).toFixed(1);
+    const suffix = kpi.unit ? ` ${kpi.unit}` : '';
+
+    charts += `
+      <div class="bar-chart-item">
+        <div class="bar-chart-item-title">${kpi.label}</div>
+        <div class="bar-group">
+          <div class="bar-row">
+            <div class="bar-row-label a">A</div>
+            <div class="bar-track">
+              <div class="bar-fill ${aWins ? 'win-a' : 'a'}" style="width:${pctA}%"></div>
+            </div>
+            <div class="bar-value ${aWins ? 'win' : 'a'}">${fmt(vA)}${suffix}</div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-row-label b">B</div>
+            <div class="bar-track">
+              <div class="bar-fill ${bWins ? 'win-b' : 'b'}" style="width:${pctB}%"></div>
+            </div>
+            <div class="bar-value ${bWins ? 'win' : 'b'}">${fmt(vB)}${suffix}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div class="summary-header">Performance Comparison</div>
+    <div class="bar-chart-grid">${charts}</div>
+  `;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
