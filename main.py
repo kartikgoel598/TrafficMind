@@ -6,6 +6,7 @@ import random
 import json
 from datetime import datetime
 import sys
+import yaml
 
 
 
@@ -138,7 +139,14 @@ def train(args):
         seed=args.seed
     )
 
-    EPSILON_DECAY = 0.999988
+    with open("config.yaml", "r") as f:
+        config = yaml.safe_load(f)
+
+    LEARNING_RATE = config["learning_rate"] or 0.0005
+    EPSILON_DECAY = config["epsilon_decay"] or 0.999988
+    GAMMA = config["gamma"] or 0.99
+    EPSILON_START = config["epsilon_start"] or 1.0 
+    EPSILON_END = config["epsilon_end"] or 0.01
     intersections = ['J1', 'J2', 'J4', 'J5']
 
     agents = {}
@@ -148,10 +156,10 @@ def train(args):
         agents[junction] = DQNAgent(
             state_size=env.state_size,
             action_size=env.action_size,
-            lr=0.0005,
-            gamma=0.99,
-            epsilon=1.0,
-            epsilon_min=0.01,
+            lr=LEARNING_RATE,
+            gamma=GAMMA,
+            epsilon=EPSILON_START,
+            epsilon_min=EPSILON_END,
             epsilon_decay=EPSILON_DECAY,
             target_update_freq=500
         )
