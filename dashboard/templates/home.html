@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrafficMind - Project Overview</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+
+
+
+
+    /* ── Goals grid ───────────────────────────────────────────────── */
+    .goals-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .goal-card {
+      background: var(--surface-1);
+      border: 1px solid var(--border-sub);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      transition: border-color 0.2s;
+    }
+
+    .goal-card:hover { border-color: var(--border-mid); }
+
+    .goal-num {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--a);
+      font-family: var(--mono);
+    }
+
+    .goal-text {
+      font-size: 0.83rem;
+      color: var(--text);
+      line-height: 1.55;
+    }
+
+    /* ── Reward pills row ─────────────────────────────────────────── */
+    .reward-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .reward-pill {
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.07em;
+      padding: 0.3rem 0.8rem;
+      border-radius: 6px;
+      background: var(--surface-2);
+      border: 1px solid var(--border-sub);
+      color: var(--text);
+      font-family: var(--mono);
+    }
+
+    .reward-pill.local       { border-color: var(--a);   color: var(--a);   }
+    .reward-pill.cooperative { border-color: var(--b);   color: var(--b);   }
+    .reward-pill.fairness    { border-color: var(--win);  color: var(--win); }
+
+    /* ── Tech stack ───────────────────────────────────────────────── */
+    .tech-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+    }
+
+    .tech-tag {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      font-family: var(--mono);
+      padding: 0.28rem 0.7rem;
+      border-radius: 5px;
+      background: var(--surface-2);
+      border: 1px solid var(--border-sub);
+      color: var(--text);
+    }
+
+    /* ── Team ─────────────────────────────────────────────────────── */
+    .team-row {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .team-card {
+      flex: 1;
+      background: var(--surface-1);
+      border: 1px solid var(--border-sub);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      transition: border-color 0.2s;
+    }
+
+    .team-card:hover { border-color: var(--border-mid); }
+
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      flex-shrink: 0;
+      font-family: var(--mono);
+    }
+
+    .avatar.a {
+      background: var(--a-glow);
+      border: 1px solid var(--a);
+      color: var(--a);
+    }
+
+    .avatar.b {
+      background: var(--b-glow);
+      border: 1px solid var(--b);
+      color: var(--b);
+    }
+
+    .team-name {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .team-role {
+      font-size: 0.7rem;
+      color: var(--text);
+      margin-top: 0.15rem;
+      letter-spacing: 0.04em;
+      font-family: var(--mono);
+    }
+
+    /* ── Footer ───────────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border-sub);
+      padding: 1rem 2rem;
+      text-align: center;
+      font-size: 0.68rem;
+      color: var(--text);
+      letter-spacing: 0.06em;
+      font-family: var(--mono);
+    }
+
+    /* ── Responsive ───────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .goals-grid { grid-template-columns: 1fr; }
+      .team-row   { flex-direction: column; }
+      .hero-title { font-size: 2rem; }
+      nav a { padding: 0.3rem 0.55rem; font-size: 0.68rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────────────────────────────── -->
+<header>
+  <a class="nav-logo" href="home">Traffic<span>Mind</span></a>
+  <nav>
+    <a href="/" class="active">Overview</a>
+    <a href="comparison">Comparison</a>
+    <a href="results">Results</a>
+    <a href="training_graph">Training Graph</a>
+  </nav>
+</header>
+
+<!-- ── Main ───────────────────────────────────────────────────────── -->
+<main>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-eyebrow">Deep Reinforcement Learning · Traffic Signal Control</div>
+    <h1 class="hero-title">Traffic<span>Mind</span></h1>
+    <p class="hero-subtitle">
+      An open-source traffic signal control system that learns to adapt in real time.
+      No fixed rules, no pretrained weights. Just reward signals and a network learning to move traffic.
+    </p>
+    <div class="model-badge">DQN Agent</div>
+  </section>
+
+  <!-- About -->
+  <section class="desc-block">
+    <div class="section-label">About the Project</div>
+    <p class="desc-body">
+      TrafficMind is a reproducible research platform for studying how reward function design affects the behavior of a reinforcement learning traffic signal controller. The agent learns from live queue length and waiting time data generated by a SUMO simulation and develops its own signal control policy without relying on predefined traffic rules.
+      While previous research has shown that reinforcement learning can outperform fixed-time traffic signals, the effect of reward design is less well understood. This project isolates that factor by keeping everything else the same and changing only the reward function, allowing its impact on traffic efficiency, learning stability, and fairness to be evaluated directly.
+    </p>
+    <p class="desc-body">
+      While prior work shows RL can outperform fixed-time signals, it remains unclear how different
+      reward formulations affect efficiency, stability, and fairness in practice. This project isolates
+      that variable: everything else stays identical, only the reward changes.
+    </p>
+  </section>
+
+  <!-- Key goals -->
+  <section>
+    <div class="section-label">Key Goals</div>
+    <div class="goals-grid">
+      <div class="goal-card">
+        <div class="goal-num">01</div>
+        <div class="goal-text">Compare RL-based control against fixed-time and heuristic baselines across multiple traffic scenarios.</div>
+      </div>
+      <div class="goal-card">
+        <div class="goal-num">02</div>
+        <div class="goal-text">Isolate the effect of reward design on outcomes — efficiency, phase stability, and queue fairness.</div>
+      </div>
+      <div class="goal-card">
+        <div class="goal-num">03</div>
+        <div class="goal-text">Keep the system fully reproducible: fixed seeds, open-source simulation, and logged metrics at every step.</div>
+      </div>
+      <div class="goal-card">
+        <div class="goal-num">04</div>
+        <div class="goal-text">Provide a live dashboard for side-by-side policy evaluation without touching any code.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Reward functions -->
+  <section>
+    <div class="section-label">Reward Functions Studied</div>
+    <div class="reward-row">
+      <span class="reward-pill local">Local</span>
+      <span class="reward-pill cooperative">Cooperative</span>
+      <span class="reward-pill fairness">Fairness</span>
+      <span class="reward-pill">Pressure Local</span>
+      <span class="reward-pill">Pressure Cooperative</span>
+      <span class="reward-pill">Pressure Fairness</span>
+    </div>
+  </section>
+
+  <!-- Tech stack -->
+  <section>
+    <div class="section-label">Technology Stack</div>
+    <div class="tech-row">
+      <span class="tech-tag">PyTorch</span>
+      <span class="tech-tag">FastAPI</span>
+      <span class="tech-tag">SUMO / TraCI</span>
+      <span class="tech-tag">Pandas</span>
+      <span class="tech-tag">Matplotlib</span>
+      <span class="tech-tag">Seaborn</span>
+      <span class="tech-tag">Uvicorn</span>
+      <span class="tech-tag">python-dotenv</span>
+    </div>
+  </section>
+
+  <!-- Team -->
+  <section>
+    <div class="section-label">Team</div>
+    <div class="team-row">
+      <div class="team-card">
+        <div class="avatar a">JA</div>
+        <div>
+          <div class="team-name">Joan Allysen</div>
+          <div class="team-role">Project Contributor</div>
+        </div>
+      </div>
+      <div class="team-card">
+        <div class="avatar b">KG</div>
+        <div>
+          <div class="team-name">Kartik Goel</div>
+          <div class="team-role">Project Contributor</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ── Footer ─────────────────────────────────────────────────────── -->
+<footer>
+  TrafficMind · Open Source · SUMO-based RL Traffic Signal Control
+</footer>
+
+</body>
+</html>

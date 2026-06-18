@@ -23,11 +23,23 @@ app = FastAPI(title="TrafficMind Versus")
 LIVE_A = "live_a.json"
 LIVE_B = "live_b.json"
 
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 # ── Serve dashboard HTML ───────────────────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    html_path = Path(__file__).parent / "dashboard.html"
+    html_path = Path(__file__).parent / "templates/home.html"
+    return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
+
+@app.get("/comparison", response_class=HTMLResponse)
+async def read_comparison_page():
+    html_path = Path(__file__).parent / "templates/comparison.html"
+    return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
+
+@app.get("/results", response_class=HTMLResponse)
+async def read_comparison_page():
+    html_path = Path(__file__).parent / "templates/results.html"
     return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
 
 
@@ -127,7 +139,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
 @app.get("/models")
 def list_models():
-    outputs = Path("outputs")
+    outputs = Path(__file__).parent.parent.resolve() / "outputs"
     if not outputs.exists():
         return {"folders": []}
     folders = [
@@ -137,5 +149,16 @@ def list_models():
         and any(d.glob("agent_*_final.pth"))
     ]
     return {"folders": folders}
+
+# Get evaluation result of all reward system, the important part
+
+@app.get("/evaluations")
+def list_evaluations():
+    outputs = Path(__file__).parent.parent.resolve() / "evaluations"
+    if not outputs.exists():
+        return {"files" : []}
+    files = [
+        # get all the json, and then get the mean_waiting_time, mean_queue_time, max_time
+    ]
 
 # uvicorn server:app --port 8080

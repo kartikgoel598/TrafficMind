@@ -8,10 +8,8 @@ import matplotlib.ticker as ticker
 OUTPUT_DIR = "output_plots"
 
 '''
-TODO 
-1. make 3 graph to compare pressure local, with original local, do this for all 3 reward system
-2. write all the file directory above
-3. 
+This is to plot loss and reward while training and plot mean waiting time, queue time, etc
+BEFORE RUNNING THIS FILE, make sure that all model is in the system. INCLUDING PRESSURE REWARD SYSTEM
 '''
 
 PATHS = {
@@ -75,7 +73,6 @@ def plot_rewards_normalized(data: dict[str, dict]) -> None:
     fig.savefig(os.path.join(OUTPUT_DIR, "rewards_normalized.png"), dpi=150)
     print("  Saved: rewards_normalized.png")
     plt.close(fig)
-
 
 def plot_loss_normalized(data: dict[str, dict]) -> None:
     fig, ax = plt.subplots(figsize=(12, 5))
@@ -179,7 +176,31 @@ def plot_loss(data: dict[str, dict]) -> None:
     print("  Saved: loss.png")
     plt.close(fig)
 
+# Plot average wait time across all 12 reward formulation peak and off_peak
+def plot_mean_wait_time():
+    pass
 
+# Plot average queue time across all 12 reward formulation peak and off_peak
+def plot_mean_queue_time():
+    pass
+
+# Plot averages total waiting time in a snapshot over 900 episode peak and off_peak
+def plot_total_waiting_time():
+    pass
+
+# Plot worst case scenario peak and off_peak
+def plot_max_waiting_time():
+    pass 
+
+
+'''
+    Total Plot Image
+    wait time : peak and off peak 2 image
+    queue amount : peak and off peak 2 image
+    total wait time : peak and off peak 2 image
+    max_wait_time : peak and off peak 2 image
+    total is 8 image (kpi) + 5 image (reward + loss)
+'''
 def main():
     data = {}
     for label, path in PATHS.items():
@@ -215,6 +236,14 @@ def main():
     plot_loss(data)
     plot_rewards_normalized(data)
     plot_loss_normalized(data)
+
+    # After this section is is the KPIs.
+
+    plot_mean_wait_time()
+    plot_mean_queue_time()
+    plot_total_waiting_time()
+    plot_max_waiting_time()
+    
     print("Done.")
 
 if __name__ == '__main__':

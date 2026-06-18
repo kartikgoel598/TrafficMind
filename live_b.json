@@ -1,1 +1,0 @@
-{"status": "done", "agent": "fixed_time", "slot": "b", "seed": 42, "scenario": "peak", "step": 900, "sim_time": 0.0, "mean_waiting_time": 2.0, "mean_queue_length": 0.12, "total_waiting_time": 4.0, "max_lane_wait": 32.0, "throughput": 364, "switch_count": 156, "avg_mean_wait": 6.32, "avg_mean_queue": 0.23, "avg_total_wait": 31.38}
