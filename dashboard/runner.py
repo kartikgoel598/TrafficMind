@@ -22,6 +22,7 @@ if not sumo_home:
     raise EnvironmentError("Sumo_Home not set in .env")
 sys.path.append(os.path.join(sumo_home, "tools"))
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from environment.sumo_env import SumoEnvironment
 from agents.dqn import DQNAgent
 from utils.traffic_signal_utils import get_green_red_queues

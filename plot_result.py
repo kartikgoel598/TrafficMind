@@ -28,6 +28,37 @@ PATHS = {
     "Pressure_Fairness_OffPeak":    "outputs/pressure_fairness_off_peak/results.json",
 }
 
+KPI_PATHS_PEAK = {}
+KPI_PATHS_OFFPEAK = {}
+'''
+result would look like
+{
+    'Cooperative_Results.json': 'evaluations/cooperative_peak_results.json', 
+    'Fairness_Results.json': 'evaluations/fairness_peak_results.json', 
+    'Local_Results.json': 'evaluations/local_peak_results.json', 
+    'Pressure_Cooperative_Results.json': 'evaluations/pressure_cooperative_peak_results.json', 
+    'Pressure_Fairness_Results.json': 'evaluations/pressure_fairness_peak_results.json', 
+    'Pressure_Local_Results.json': 'evaluations/pressure_local_peak_results.json'
+}
+'''
+evaluation_dir = "evaluations/"
+if os.path.isdir(evaluation_dir):
+    for filename in os.listdir(evaluation_dir):
+        if not filename.endswith(".json"):
+            continue
+        name = filename.replace("_result.json", "")
+        if "_off_peak" in name:
+            key = name.replace("_off_peak", "")
+            # title-case it to match your COLORS keys
+            key = "_".join(w.capitalize() for w in key.split("_"))
+            KPI_PATHS_OFFPEAK[key] = evaluation_dir + filename
+        elif "_peak" in name:
+            key = name.replace("_peak", "")
+            key = "_".join(w.capitalize() for w in key.split("_"))
+            KPI_PATHS_PEAK[key] = evaluation_dir + filename
+
+print(KPI_PATHS_PEAK)
+
 COLORS = {
     "Local":       "#4C9BE8",
     "Cooperative": "#E8774C",
@@ -44,6 +75,40 @@ COLORS = {
     "Pressure_Fairness_OffPeak":    "#5FD69B",
 }
 
+POLICY_COLORS = {
+    "trained_dqn":    "#2563EB",   # bold blue  — highlighted
+    "fixed_time":     "#94A3B8",   # slate grey
+    "random_legal":   "#FCA5A5",   # soft red
+    "greedy_queue":   "#6EE7B7",   # soft green
+    "webster_static": "#FCD34D",   # soft amber
+}
+ 
+POLICY_LABELS = {
+    "trained_dqn":    "Trained DQN",
+    "fixed_time":     "Fixed Time",
+    "random_legal":   "Random Legal",
+    "greedy_queue":   "Greedy Queue",
+    "webster_static": "Webster Static",
+}
+
+# Desired policy order in every bar cluster
+POLICY_ORDER = ["trained_dqn", "fixed_time", "random_legal", "greedy_queue", "webster_static"]
+ 
+# KPI metadata: key → (y-axis label, title suffix)
+KPI_META = {
+    "mean_waiting_time":  ("Mean Waiting Time (s)",    "Mean Waiting Time"),
+    "mean_queue_length":  ("Mean Queue Length (veh)",  "Mean Queue Length"),
+    "max_lane_wait":      ("Max Lane Wait (s)",         "Max Lane Wait"),
+    "total_waiting_time": ("Total Waiting Time (s)",    "Total Waiting Time"),
+}
+
+def _key_from_filename(filename: str, suffix: str) -> str:
+    """
+    Convert a filename like 'pressure_local_peak_result.json' into a COLORS-style
+    key like 'Pressure_Local', given suffix='_peak' or '_off_peak'.
+    """
+    name = filename.replace("_result.json", "").replace(suffix, "")
+    return "_".join(w.capitalize() for w in name.split("_"))
 
 def normalize(values):
     arr = np.array(values, dtype=float)
@@ -176,22 +241,113 @@ def plot_loss(data: dict[str, dict]) -> None:
     print("  Saved: loss.png")
     plt.close(fig)
 
-# Plot average wait time across all 12 reward formulation peak and off_peak
-def plot_mean_wait_time():
-    pass
-
-# Plot average queue time across all 12 reward formulation peak and off_peak
-def plot_mean_queue_time():
-    pass
-
-# Plot averages total waiting time in a snapshot over 900 episode peak and off_peak
-def plot_total_waiting_time():
-    pass
-
-# Plot worst case scenario peak and off_peak
-def plot_max_waiting_time():
-    pass 
-
+# ── KPI bar-chart helper ──────────────────────────────────────────────────────
+ 
+def _plot_kpi(kpi_key: str, kpi_paths: dict[str, str], scenario_label: str) -> None:
+    """
+    Draw a grouped bar chart for one KPI and one scenario (peak / off-peak).
+ 
+    X groups  = reward-function models (keys of kpi_paths)
+    Bars      = policies (POLICY_ORDER)
+    Error bars = ± 1 std from aggregate stats
+    DQN bar   = full opacity + black edge; baselines = 0.65 opacity, no edge
+    """
+    y_label, title_suffix = KPI_META[kpi_key]
+ 
+    model_keys = list(kpi_paths.keys())
+    n_models   = len(model_keys)
+    n_policies = len(POLICY_ORDER)
+ 
+    bar_width   = 0.14
+    group_gap   = 0.05
+    group_width = n_policies * bar_width + group_gap
+    x_centers   = np.arange(n_models) * group_width
+ 
+    fig, ax = plt.subplots(figsize=(max(10, n_models * 2.2), 6))
+ 
+    for p_idx, policy in enumerate(POLICY_ORDER):
+        means, stds = [], []
+        for model_key in model_keys:
+            try:
+                kpi_data = load(kpi_paths[model_key])
+                agg      = kpi_data["policies"][policy]["aggregate"][kpi_key]
+                means.append(agg["mean"])
+                stds.append(agg["std"])
+            except (KeyError, FileNotFoundError):
+                means.append(0.0)
+                stds.append(0.0)
+ 
+        offsets  = x_centers + (p_idx - n_policies / 2 + 0.5) * bar_width
+        color    = POLICY_COLORS[policy]
+        is_dqn   = policy == "trained_dqn"
+        alpha    = 1.0  if is_dqn else 0.65
+        edgecolor = "black" if is_dqn else "none"
+        lw        = 1.2   if is_dqn else 0.0
+        zorder    = 3     if is_dqn else 2
+ 
+        ax.bar(
+            offsets, means,
+            width=bar_width,
+            color=color,
+            alpha=alpha,
+            edgecolor=edgecolor,
+            linewidth=lw,
+            zorder=zorder,
+            label=POLICY_LABELS[policy],
+            yerr=stds,
+            capsize=3,
+            error_kw=dict(elinewidth=1.0, ecolor="black", capthick=1.0, alpha=0.7),
+        )
+ 
+    ax.set_xticks(x_centers)
+    ax.set_xticklabels(model_keys, rotation=25, ha="right", fontsize=9)
+    ax.set_ylabel(y_label, fontsize=11)
+    ax.set_title(
+        f"{title_suffix} — {scenario_label}",
+        fontsize=14, fontweight="bold", pad=12,
+    )
+    ax.legend(fontsize=9, loc="upper right")
+    ax.grid(True, axis="y", alpha=0.3, linestyle="--")
+    ax.set_axisbelow(True)
+    fig.tight_layout()
+ 
+    safe_kpi   = kpi_key.replace(" ", "_")
+    safe_scen  = scenario_label.lower().replace(" ", "_").replace("-", "_")
+    filename   = f"kpi_{safe_kpi}_{safe_scen}.png"
+    fig.savefig(os.path.join(OUTPUT_DIR, filename), dpi=150, bbox_inches="tight")
+    print(f"  Saved: {filename}")
+    plt.close(fig)
+ 
+ 
+# ── Public KPI plot functions ─────────────────────────────────────────────────
+ 
+def plot_mean_wait_time() -> None:
+    if KPI_PATHS_PEAK:
+        _plot_kpi("mean_waiting_time", KPI_PATHS_PEAK,    "Peak")
+    if KPI_PATHS_OFFPEAK:
+        _plot_kpi("mean_waiting_time", KPI_PATHS_OFFPEAK, "Off-Peak")
+ 
+ 
+def plot_mean_queue_time() -> None:
+    if KPI_PATHS_PEAK:
+        _plot_kpi("mean_queue_length", KPI_PATHS_PEAK,    "Peak")
+    if KPI_PATHS_OFFPEAK:
+        _plot_kpi("mean_queue_length", KPI_PATHS_OFFPEAK, "Off-Peak")
+ 
+ 
+def plot_total_waiting_time() -> None:
+    if KPI_PATHS_PEAK:
+        _plot_kpi("total_waiting_time", KPI_PATHS_PEAK,    "Peak")
+    if KPI_PATHS_OFFPEAK:
+        _plot_kpi("total_waiting_time", KPI_PATHS_OFFPEAK, "Off-Peak")
+ 
+ 
+def plot_max_waiting_time() -> None:
+    if KPI_PATHS_PEAK:
+        _plot_kpi("max_lane_wait", KPI_PATHS_PEAK,    "Peak")
+    if KPI_PATHS_OFFPEAK:
+        _plot_kpi("max_lane_wait", KPI_PATHS_OFFPEAK, "Off-Peak")
+ 
 
 '''
     Total Plot Image
