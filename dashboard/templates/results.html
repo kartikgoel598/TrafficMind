@@ -44,11 +44,35 @@
     font-family: var(--mono);
 }
 
+.controls-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2rem;
+    margin: 1rem 0;
+}
+
+.toggle-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.toggle-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--a);
+    font-family: var(--mono);
+    margin-bottom: 0.4rem;
+}
+
 .toggle-row {
     display: flex;
     gap: 0.5rem;
-    margin: 1rem 0;
+    margin: 0;
 }
+
 
 .toggle-btn {
     font-size: 0.72rem;
@@ -68,18 +92,35 @@
 .toggle-btn:hover { color: var(--text); border-color: var(--border-emp); }
 .toggle-btn.active { color: var(--a); border-color: var(--a); }
 
-.chart-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+.chart-single {
     margin-top: 0.5rem;
 }
 
-.chart-grid img {
+.chart-single img {
     width: 100%;
     border-radius: 6px;
     border: 1px solid var(--border-sub);
+    margin-top: 1rem;
 }
+
+.kpi-btn 
+{     
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-family: var(--mono);
+    padding: 0.35rem 0.85rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-mid);
+    background: transparent;
+    color: var(--border-emp);
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.kpi-btn:hover { color: var(--text); border-color: var(--border-emp); }
+.kpi-btn.active { color: var(--b); border-color: var(--b); }
     </style>
 </head>
 <body>
@@ -123,24 +164,36 @@
             </div>
         </section>
 
-        <section class="desc-block">
+        <section class="desc-block" id="original-section">
             <div class="section-label">Local, Cooperative, and Fairness Constrained Comparison</div>
             <p class="desc-subtitle">Below are the comparison between the 3 reward formulation in peak and off peak scenario</p>
 
-            <div class="toggle-row">
-                <button class="toggle-btn active" onclick="switchScenario('original', 'peak', this)">Peak</button>
-                <button class="toggle-btn" onclick="switchScenario('original', 'off_peak', this)">Off-Peak</button>
+            <div class="controls-row">
+
+                <div class="toggle-group">
+                    <div class="toggle-label">Scenario</div>
+                    <div class="toggle-row">
+                        <button class="toggle-btn active" data-scenario="peak">Peak</button>
+                        <button class="toggle-btn" data-scenario="off_peak">Off-Peak</button>
+                    </div>
+                </div>
+
+                <div class="toggle-group">
+                    <div class="toggle-label">KPI</div>
+                    <div class="toggle-row">
+                        <button class="kpi-btn active" data-kpi="mean_waiting_time">Mean Wait</button>
+                        <button class="kpi-btn" data-kpi="mean_queue_length">Queue Length</button>
+                        <button class="kpi-btn" data-kpi="total_waiting_time">Total Wait</button>
+                        <button class="kpi-btn" data-kpi="max_lane_wait">Max Lane Wait</button>
+                    </div>
+                </div>
+
             </div>
 
-            <div class="chart-grid" id="original-charts">
-                <img src="/plots/original_rewards/kpi_mean_waiting_time_peak_original_reward.png" />
-                <img src="/plots/original_rewards/kpi_mean_queue_length_peak_original_reward.png" />
-                <img src="/plots/original_rewards/kpi_total_waiting_time_peak_original_reward.png" />
-                <img src="/plots/original_rewards/kpi_max_lane_wait_peak_original_reward.png" />
+            <div class="chart-single">
+                <img id="original-chart-img" src="/plots/original_rewards/kpi_mean_waiting_time_peak_original_reward.png" />
             </div>
             <!-- color description can be tag or something here follow the image -->
-            <!-- button here choosing peak or offpeak -->
-            <!-- and then graph here of peak or offpeak scenario comparison between 3 reward formulation -->
             <!-- make a table here comparing between 3 reward formulation -->
             <!-- and then little conclusion here -->
         </section>
@@ -167,13 +220,38 @@
             </div>
         </section>
 
-        <section class="desc-block">
-            <div class="section-label">Pressure Local, Pressure Cooperative, and Fairness Constrained</div>
-        </section>
+        <section class="desc-block" id="pressure-section">
+            <div class="section-label">Pressure Local, Pressure Cooperative, and Pressure Fairness Constrained Comparison</div>
+            <p class="desc-subtitle">Below are the comparison between the 3 pressure reward formulation in peak and off peak scenario</p>
 
-        <section class="desc-block">
-            <div class="section-label">Off peak</div>
-            <!-- same as above -->
+            <div class="controls-row">
+
+                <div class="toggle-group">
+                    <div class="toggle-label">Scenario</div>
+                    <div class="toggle-row">
+                        <button class="toggle-btn active" data-scenario="peak">Peak</button>
+                        <button class="toggle-btn" data-scenario="off_peak">Off-Peak</button>
+                    </div>
+                </div>
+
+                <div class="toggle-group">
+                    <div class="toggle-label">KPI</div>
+                    <div class="toggle-row">
+                        <button class="kpi-btn active" data-kpi="mean_waiting_time">Mean Wait</button>
+                        <button class="kpi-btn" data-kpi="mean_queue_length">Queue Length</button>
+                        <button class="kpi-btn" data-kpi="total_waiting_time">Total Wait</button>
+                        <button class="kpi-btn" data-kpi="max_lane_wait">Max Lane Wait</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="chart-single">
+                <img id="pressure-chart-img" src="/plots/pressure_rewards/kpi_mean_waiting_time_peak_pressure_reward.png" />
+            </div>
+            <!-- color description can be tag or something here follow the image -->
+            <!-- make a table here comparing between 3 reward formulation -->
+            <!-- and then little conclusion here -->
         </section>
     </main>
 
@@ -182,21 +260,28 @@
     </footer>
 
     <script>
-    function switchScenario(group, scenario, btn) {
-        // update active button
-        btn.closest('.toggle-row').querySelectorAll('.toggle-btn')
-        .forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+        function updateChart(group, btn) {
+            const section = btn.closest('section');
+            
+            // update active state within the same toggle-row only
+            btn.closest('.toggle-row').querySelectorAll('button')
+            .forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
 
-        const prefix = group === 'original'
-            ? '/plots/original_rewards/kpi_'
-            : '/plots/pressure_rewards/kpi_';
-        const suffix = `_${scenario}_${group}_reward.png`;
+            const scenario = section.querySelector('.toggle-btn.active').dataset.scenario;
+            const kpi      = section.querySelector('.kpi-btn.active').dataset.kpi;
 
-        const kpis = ['mean_waiting_time', 'mean_queue_length', 'total_waiting_time', 'max_lane_wait'];
-        const imgs = document.querySelectorAll(`#${group}-charts img`);
-        kpis.forEach((kpi, i) => { imgs[i].src = prefix + kpi + suffix; });
-    }
+            document.getElementById(`${group}-chart-img`).src = 
+                `/plots/${group}_rewards/kpi_${kpi}_${scenario}_${group}_reward.png`;
+        }
+
+        document.querySelectorAll('#original-section .toggle-btn, #original-section .kpi-btn')
+            .forEach(btn => btn.addEventListener('click', () => updateChart('original', btn)));
+
+        document.querySelectorAll('#pressure-section .toggle-btn, #pressure-section .kpi-btn')
+            .forEach(btn => btn.addEventListener('click', () => updateChart('pressure', btn)));
+
+        
     </script>
 </body>
 </html>

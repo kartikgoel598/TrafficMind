@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrafficMind - Training Graphs</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .graph-block {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .graph-block img {
+            width: 100%;
+            border-radius: 6px;
+            border: 1px solid var(--border-sub);
+        }
+
+        .graph-desc {
+            font-size: 0.85rem;
+            color: var(--border-emp);
+            font-family: var(--mono);
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a class="nav-logo" href="/">Traffic<span>Mind</span></a>
+        <nav>
+            <a href="/">Overview</a>
+            <a href="/comparison">Comparison</a>
+            <a href="/results">Results</a>
+            <a href="/training_graph" class="active">Training Graph</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <h1 class="hero-title">Training Graphs</h1>
+            <p class="hero-subtitle">
+                Training reward and loss curves across all reward formulations over 700 episodes,
+                in both peak and off-peak traffic conditions.
+            </p>
+        </section>
+
+        <section class="graph-block">
+            <div class="section-label">Original Reward — Training Curve</div>
+            <p class="graph-desc">
+                Local, Cooperative, and Fairness reward functions under peak and off-peak conditions.
+                Each subplot uses a different reward scale — not directly comparable across formulations.
+            </p>
+            <img src="/plots/rewards_original.png" alt="Original reward training curves" />
+        </section>
+
+        <section class="graph-block">
+            <div class="section-label">Pressure Reward — Training Curve</div>
+            <p class="graph-desc">
+                Pressure variants of Local, Cooperative, and Fairness under peak and off-peak conditions.
+                Off-peak models show cleaner upward trends due to lower traffic variance.
+            </p>
+            <img src="/plots/rewards_pressure.png" alt="Pressure reward training curves" />
+        </section>
+
+        <section class="graph-block">
+            <div class="section-label">Training Loss — All Reward Functions</div>
+            <p class="graph-desc">
+                Huber 1 loss is comparable across all reward formulations since it reflects Q-value approximation error,
+                not reward magnitude. Peak conditions converge to higher loss due to greater state complexity.
+            </p>
+            <img src="/plots/loss.png" alt="Training loss all reward functions" />
+        </section>
+    </main>
+
+    <footer>
+        TrafficMind · Open Source · SUMO-based RL Traffic Signal Control
+    </footer>
+</body>
+</html>

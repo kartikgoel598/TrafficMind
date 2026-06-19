@@ -165,7 +165,7 @@ def plot_loss_normalized(data: dict[str, dict]) -> None:
                 color=color, linewidth=2, linestyle=ls, label=label)
     ax.set_title("Normalised Loss — All Conditions", fontsize=14, fontweight="bold")
     ax.set_xlabel("Episode", fontsize=11)
-    ax.set_ylabel("Normalised MSE Loss [0–1]", fontsize=11)
+    ax.set_ylabel("Normalised Loss [0–1]", fontsize=11)
     ax.set_ylim(-0.05, 1.05)
     ax.legend(fontsize=9)
     ax.grid(True, alpha=0.3, linestyle="--")
@@ -221,7 +221,7 @@ def plot_rewards(data: dict[str, dict], filename:str) -> None:
  
  
 def plot_loss(data: dict[str, dict]) -> None:
-    """All on one graph — MSE loss is comparable across reward functions."""
+    """All on one graph — loss is comparable across reward functions."""
     fig, ax = plt.subplots(figsize=(11, 5))
 
     for label, result in data.items():
@@ -241,7 +241,7 @@ def plot_loss(data: dict[str, dict]) -> None:
 
     ax.set_title("Training Loss — All Reward Functions", fontsize=14, fontweight="bold", pad=12)
     ax.set_xlabel("Episode", fontsize=11)
-    ax.set_ylabel("MSE Loss", fontsize=11)
+    ax.set_ylabel("Loss", fontsize=11)
     ax.legend(fontsize=5)
     ax.grid(True, alpha=0.3, linestyle="--")
     ax.xaxis.set_minor_locator(ticker.AutoMinorLocator())

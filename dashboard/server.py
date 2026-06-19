@@ -24,7 +24,8 @@ LIVE_A = "live_a.json"
 LIVE_B = "live_b.json"
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
-app.mount("/plots", StaticFiles(directory="output_plots"), name="plots")
+BASE_DIR = Path(__file__).parent.parent
+app.mount("/plots", StaticFiles(directory=str(BASE_DIR / "output_plots")), name="plots")
 
 # ── Serve dashboard HTML ───────────────────────────────────────────────────────
 
@@ -41,6 +42,11 @@ async def read_comparison_page():
 @app.get("/results", response_class=HTMLResponse)
 async def read_comparison_page():
     html_path = Path(__file__).parent / "templates/results.html"
+    return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
+
+@app.get("/training_graph", response_class=HTMLResponse)
+async def read_training_graph():
+    html_path = Path(__file__).parent / "templates/training_graph.html"
     return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
 
 
@@ -151,15 +157,6 @@ def list_models():
     ]
     return {"folders": folders}
 
-# Get evaluation result of all reward system, the important part
 
-@app.get("/evaluations")
-def list_evaluations():
-    outputs = Path(__file__).parent.parent.resolve() / "evaluations"
-    if not outputs.exists():
-        return {"files" : []}
-    files = [
-        # get all the json, and then get the mean_waiting_time, mean_queue_time, max_time
-    ]
 
 # uvicorn server:app --port 8080

@@ -10,7 +10,7 @@
     --surface-2:  #1c2128;
     --border-sub: #21262d;
     --border-mid: #30363d;
-    --border-emp: #444c56;
+    --border-emp: #a8a4b9;
     --text:       #e6edf3;
 
     /* Agent identity */
@@ -197,3 +197,22 @@ main {
 /* highlight inline */
 .hl-a { color: var(--a); font-weight: 600; }
 .hl-b { color: var(--b); font-weight: 600; }
+
+/* ── Footer ───────────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--border-sub);
+  padding: 1rem 2rem;
+  text-align: center;
+  font-size: 0.68rem;
+  color: var(--text);
+  letter-spacing: 0.06em;
+  font-family: var(--mono);
+}
+
+/* ── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .goals-grid { grid-template-columns: 1fr; }
+  .team-row   { flex-direction: column; }
+  .hero-title { font-size: 2rem; }
+  nav a { padding: 0.3rem 0.55rem; font-size: 0.68rem; }
+}
