@@ -5,6 +5,82 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TrafficMind - Results</title>
     <link rel="stylesheet" href="/static/style.css">
+    <style>
+.formula-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.formula-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border-mid);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.formula-name {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--a);
+    font-family: var(--mono);
+}
+
+.formula-eq {
+    font-size: 0.9rem;
+    color: var(--text);
+    font-family: var(--mono);
+}
+
+.formula-params {
+    font-size: 0.75rem;
+    color: var(--border-emp);
+    font-family: var(--mono);
+}
+
+.toggle-row {
+    display: flex;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.toggle-btn {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-family: var(--mono);
+    padding: 0.35rem 0.85rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-mid);
+    background: transparent;
+    color: var(--border-emp);
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.toggle-btn:hover { color: var(--text); border-color: var(--border-emp); }
+.toggle-btn.active { color: var(--a); border-color: var(--a); }
+
+.chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.chart-grid img {
+    width: 100%;
+    border-radius: 6px;
+    border: 1px solid var(--border-sub);
+}
+    </style>
 </head>
 <body>
     <header>
@@ -25,13 +101,74 @@
             </p>
         </section>
 
+        <!-- havent add the styling to this -->
+        <section class="formula-block">
+            <div class="section-label">Original Formulations</div>
+            <div class="formula-grid">
+                <div class="formula-card">
+                    <div class="formula-name">Local</div>
+                    <div class="formula-eq">r = −(q + α·w) / 100</div>
+                    <div class="formula-params">α = 0.5</div>
+                </div>
+                <div class="formula-card">
+                    <div class="formula-name">Cooperative</div>
+                    <div class="formula-eq">r = −(q + α·w + β·Σq<sub>n</sub>) / 100</div>
+                    <div class="formula-params">α = 0.5, β = 0.3</div>
+                </div>
+                <div class="formula-card">
+                    <div class="formula-name">Fairness</div>
+                    <div class="formula-eq">r = −(q + α·w + β·Σq<sub>n</sub> + λ·s<sub>max</sub>) / 100</div>
+                    <div class="formula-params">α = 0.5, β = 0.3, λ = 0.1</div>
+                </div>
+            </div>
+        </section>
+
         <section class="desc-block">
-            <div class="section-label">Peak</div>
-            <p class="desc-subtitle">Below are the comparison between the 3 reward formulation in peak scenario</p>
-            <img src="" alt="">
-            <!-- make a table here comparing between 3 reward formulation peak,offpeak, and else -->
-             <!-- and then graph here -->
-              <!-- and then little conclusion here -->
+            <div class="section-label">Local, Cooperative, and Fairness Constrained Comparison</div>
+            <p class="desc-subtitle">Below are the comparison between the 3 reward formulation in peak and off peak scenario</p>
+
+            <div class="toggle-row">
+                <button class="toggle-btn active" onclick="switchScenario('original', 'peak', this)">Peak</button>
+                <button class="toggle-btn" onclick="switchScenario('original', 'off_peak', this)">Off-Peak</button>
+            </div>
+
+            <div class="chart-grid" id="original-charts">
+                <img src="/plots/original_rewards/kpi_mean_waiting_time_peak_original_reward.png" />
+                <img src="/plots/original_rewards/kpi_mean_queue_length_peak_original_reward.png" />
+                <img src="/plots/original_rewards/kpi_total_waiting_time_peak_original_reward.png" />
+                <img src="/plots/original_rewards/kpi_max_lane_wait_peak_original_reward.png" />
+            </div>
+            <!-- color description can be tag or something here follow the image -->
+            <!-- button here choosing peak or offpeak -->
+            <!-- and then graph here of peak or offpeak scenario comparison between 3 reward formulation -->
+            <!-- make a table here comparing between 3 reward formulation -->
+            <!-- and then little conclusion here -->
+        </section>
+
+        <!-- havent add the styling to this -->
+        <section class="formula-block">
+            <div class="section-label">Pressure Formulations</div>
+            <div class="formula-grid">
+                <div class="formula-card">
+                    <div class="formula-name">Pressure Local</div>
+                    <div class="formula-eq">r = −(q + α·w + β·P<sub>wrong</sub>) / 100</div>
+                    <div class="formula-params">α = 0.5, β = 2.0</div>
+                </div>
+                <div class="formula-card">
+                    <div class="formula-name">Pressure Cooperative</div>
+                    <div class="formula-eq">r = −(q + α·w + β·Σq<sub>n</sub> + γ·P<sub>wrong</sub>) / 100</div>
+                    <div class="formula-params">α = 0.5, β = 0.3, γ = 2.0</div>
+                </div>
+                <div class="formula-card">
+                    <div class="formula-name">Pressure Fairness</div>
+                    <div class="formula-eq">r = −(q + α·w + β·Σq<sub>n</sub> + λ·s<sub>max</sub> + γ·P<sub>wrong</sub>) / 100</div>
+                    <div class="formula-params">α = 0.5, β = 0.3, λ = 0.1, γ = 1.5</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="desc-block">
+            <div class="section-label">Pressure Local, Pressure Cooperative, and Fairness Constrained</div>
         </section>
 
         <section class="desc-block">
@@ -40,5 +177,26 @@
         </section>
     </main>
 
+    <footer>
+        TrafficMind · Open Source · SUMO-based RL Traffic Signal Control
+    </footer>
+
+    <script>
+    function switchScenario(group, scenario, btn) {
+        // update active button
+        btn.closest('.toggle-row').querySelectorAll('.toggle-btn')
+        .forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const prefix = group === 'original'
+            ? '/plots/original_rewards/kpi_'
+            : '/plots/pressure_rewards/kpi_';
+        const suffix = `_${scenario}_${group}_reward.png`;
+
+        const kpis = ['mean_waiting_time', 'mean_queue_length', 'total_waiting_time', 'max_lane_wait'];
+        const imgs = document.querySelectorAll(`#${group}-charts img`);
+        kpis.forEach((kpi, i) => { imgs[i].src = prefix + kpi + suffix; });
+    }
+    </script>
 </body>
 </html>

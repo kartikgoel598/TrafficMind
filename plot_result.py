@@ -102,6 +102,15 @@ KPI_META = {
     "total_waiting_time": ("Total Waiting Time (s)",    "Total Waiting Time"),
 }
 
+DISPLAY_NAMES = {
+    "Fairness_Results.json": "Fairness",
+    "Local_Results.json": "Local",
+    "Cooperative_Results.json": "Cooperative",
+    "Pressure_Fairness_Results.json": "Pressure Fairness",
+    "Pressure_Local_Results.json": "Pressure Local",
+    "Pressure_Cooperative_Results.json": "Pressure Cooperative",
+}
+
 def _key_from_filename(filename: str, suffix: str) -> str:
     """
     Convert a filename like 'pressure_local_peak_result.json' into a COLORS-style
@@ -207,7 +216,7 @@ def plot_rewards(data: dict[str, dict], filename:str) -> None:
                     fontsize=12, y=1.02)
     fig.tight_layout()
     fig.savefig(os.path.join(OUTPUT_DIR, filename), dpi=150, bbox_inches="tight")
-    print("  Saved: ", filename)
+    print("  Saved:", filename)
     plt.close(fig)
  
  
@@ -242,8 +251,15 @@ def plot_loss(data: dict[str, dict]) -> None:
     plt.close(fig)
 
 # ── KPI bar-chart helper ──────────────────────────────────────────────────────
- 
-def _plot_kpi(kpi_key: str, kpi_paths: dict[str, str], scenario_label: str) -> None:
+
+def _get_dqn_mean(model_key, kpi_paths, kpi_key):
+    try:
+        kpi_data = load(kpi_paths[model_key])
+        return kpi_data["policies"]["trained_dqn"]["aggregate"][kpi_key]["mean"]
+    except (KeyError, FileNotFoundError):
+        return float("inf")
+    
+def _plot_kpi(kpi_key: str, kpi_paths: dict[str, str], scenario_label: str, subfolder:str | None = None) -> None:
     """
     Draw a grouped bar chart for one KPI and one scenario (peak / off-peak).
  
@@ -254,17 +270,18 @@ def _plot_kpi(kpi_key: str, kpi_paths: dict[str, str], scenario_label: str) -> N
     """
     y_label, title_suffix = KPI_META[kpi_key]
  
-    model_keys = list(kpi_paths.keys())
+    model_keys = sorted(kpi_paths.keys(), key=lambda k: _get_dqn_mean(k, kpi_paths, kpi_key))
     n_models   = len(model_keys)
     n_policies = len(POLICY_ORDER)
  
-    bar_width   = 0.14
-    group_gap   = 0.05
+
+    bar_width = 0.14
+    group_gap = 0.08
     group_width = n_policies * bar_width + group_gap
     x_centers   = np.arange(n_models) * group_width
- 
+
     fig, ax = plt.subplots(figsize=(max(10, n_models * 2.2), 6))
- 
+    
     for p_idx, policy in enumerate(POLICY_ORDER):
         means, stds = [], []
         for model_key in model_keys:
@@ -277,7 +294,7 @@ def _plot_kpi(kpi_key: str, kpi_paths: dict[str, str], scenario_label: str) -> N
                 means.append(0.0)
                 stds.append(0.0)
  
-        offsets  = x_centers + (p_idx - n_policies / 2 + 0.5) * bar_width
+        offsets = x_centers + (p_idx - n_policies / 2 + 0.5) * bar_width
         color    = POLICY_COLORS[policy]
         is_dqn   = policy == "trained_dqn"
         alpha    = 1.0  if is_dqn else 0.65
@@ -298,15 +315,32 @@ def _plot_kpi(kpi_key: str, kpi_paths: dict[str, str], scenario_label: str) -> N
             capsize=3,
             error_kw=dict(elinewidth=1.0, ecolor="black", capthick=1.0, alpha=0.7),
         )
+
+        for x, y, stds in zip(offsets, means, stds):
+            ax.text(x, y + stds + max(means) * 0.01, f"{y:.3f}", ha="center", va="bottom", fontsize=7)
  
+    fixed_time_means = []
+    for model_key in model_keys:
+        try:
+            kpi_data = load(kpi_paths[model_key])
+            agg = kpi_data["policies"]["fixed_time"]["aggregate"][kpi_key]
+            fixed_time_means.append(agg["mean"])
+        except (KeyError, FileNotFoundError):
+            fixed_time_means.append(0.0)
+
+    avg_fixed = np.mean(fixed_time_means)
+    ax.axhline(avg_fixed, color="#94A3B8", linewidth=1.5, 
+            linestyle=":", alpha=0.8, label="Fixed Time avg (baseline)", zorder=1)
+    
+
     ax.set_xticks(x_centers)
-    ax.set_xticklabels(model_keys, rotation=25, ha="right", fontsize=9)
+    ax.set_xticklabels( [DISPLAY_NAMES.get(k, k) for k in model_keys], rotation=25, ha="right", fontsize=9)
     ax.set_ylabel(y_label, fontsize=11)
     ax.set_title(
         f"{title_suffix} — {scenario_label}",
         fontsize=14, fontweight="bold", pad=12,
     )
-    ax.legend(fontsize=9, loc="upper right")
+    ax.legend(fontsize=5, loc="upper right")
     ax.grid(True, axis="y", alpha=0.3, linestyle="--")
     ax.set_axisbelow(True)
     fig.tight_layout()
@@ -314,10 +348,20 @@ def _plot_kpi(kpi_key: str, kpi_paths: dict[str, str], scenario_label: str) -> N
     safe_kpi   = kpi_key.replace(" ", "_")
     safe_scen  = scenario_label.lower().replace(" ", "_").replace("-", "_")
     filename   = f"kpi_{safe_kpi}_{safe_scen}.png"
-    fig.savefig(os.path.join(OUTPUT_DIR, filename), dpi=150, bbox_inches="tight")
+    output_dir = None
+    if subfolder:
+        output_dir = os.path.join(OUTPUT_DIR, subfolder)
+    else:
+        output_dir = OUTPUT_DIR
+
+    os.makedirs(output_dir, exist_ok=True)
+    fig.savefig(os.path.join(output_dir, filename), dpi=150, bbox_inches="tight")
     print(f"  Saved: {filename}")
     plt.close(fig)
- 
+
+
+
+
  
 # ── Public KPI plot functions ─────────────────────────────────────────────────
  
@@ -347,8 +391,30 @@ def plot_max_waiting_time() -> None:
         _plot_kpi("max_lane_wait", KPI_PATHS_PEAK,    "Peak")
     if KPI_PATHS_OFFPEAK:
         _plot_kpi("max_lane_wait", KPI_PATHS_OFFPEAK, "Off-Peak")
- 
 
+ORIGINAL_KEYS = {"Local_Results.json", "Cooperative_Results.json", "Fairness_Results.json"}
+def plot_kpi_original() -> None:
+    print('plotting kpi originals.')
+    peak_paths    = {k: v for k, v in KPI_PATHS_PEAK.items() if k in ORIGINAL_KEYS}
+    offpeak_paths = {k: v for k, v in KPI_PATHS_OFFPEAK.items() if k in ORIGINAL_KEYS}
+
+    for kpi_key in KPI_META:
+        if peak_paths:
+            _plot_kpi(kpi_key, peak_paths, "Peak-Original-Reward", "original_rewards")
+        if offpeak_paths:
+            _plot_kpi(kpi_key, offpeak_paths, "Off-Peak-Original-Reward", "original_rewards")
+
+PRESSURE_KEYS =  {"Pressure_Local_Results.json", "Pressure_Cooperative_Results.json", "Pressure_Fairness_Results.json"}
+def plot_kpi_pressure() -> None:
+    print('plotting kpi pressure')
+    peak_paths      = {k : v for k, v in KPI_PATHS_PEAK.items() if k in PRESSURE_KEYS}
+    offpeak_paths   = {k : v for k, v in KPI_PATHS_OFFPEAK.items() if k in PRESSURE_KEYS}
+
+    for kpi_key in KPI_META:
+        if peak_paths:
+            _plot_kpi(kpi_key, peak_paths, "Peak-Pressure-Reward", "pressure_rewards")
+        if offpeak_paths:
+            _plot_kpi(kpi_key, offpeak_paths, "Off-Peak-Pressure-Reward", "pressure_rewards")
 '''
     Total Plot Image
     wait time : peak and off peak 2 image
@@ -399,6 +465,9 @@ def main():
     plot_mean_queue_time()
     plot_total_waiting_time()
     plot_max_waiting_time()
+
+    plot_kpi_original()
+    plot_kpi_pressure()
     
     print("Done.")
 

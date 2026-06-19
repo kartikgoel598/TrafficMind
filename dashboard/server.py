@@ -24,6 +24,7 @@ LIVE_A = "live_a.json"
 LIVE_B = "live_b.json"
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/plots", StaticFiles(directory="output_plots"), name="plots")
 
 # ── Serve dashboard HTML ───────────────────────────────────────────────────────
 
