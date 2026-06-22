@@ -113,7 +113,7 @@ class DQNAgent:
 
     def _update_target_network(self):
         """Update the target network with main network weights."""
-         self.target_network.load_state_dict(
+        self.target_network.load_state_dict(
             self.main_network.state_dict()
         )
     def save(self, path):

@@ -21,7 +21,7 @@ INTERSECTIONS = ["J1", "J2", "J4", "J5"]
 PROJECT_ROOT = os.path.dirname((os.path.abspath(__file__)))
 HEATMAP_DIR = 'output_plots/heatmap'
 STARVATION_DIR = 'output_plots/starvation'
-
+DEFAULT_SEED = [42, 123, 456, 789, 1000]
 
 
 MODELS = {
@@ -49,18 +49,10 @@ FAIRNESS_MODELS = {
 }
 
 MODEL_COLORS = {
-    "Local Peak":                    "#4C9BE8",
-    "Cooperative Peak":              "#E8774C",
-    "Fairness Peak":                 "#4CE89B",
-    "Pressure Local Peak":           "#9BC7F5",
-    "Pressure Cooperative Peak":     "#F5B39B",
-    "Pressure Fairness Peak":        "#9BF5C7",
-    "Local Off-Peak":                "#1A5FA8",
-    "Cooperative Off-Peak":          "#A83A10",
-    "Fairness Off-Peak":             "#1A9B5F",
-    "Pressure Local Off-Peak":       "#5F8FD6",
-    "Pressure Cooperative Off-Peak": "#D67A5F",
-    "Pressure Fairness Off-Peak":    "#5FD69B",
+    "Fairness Peak":             "#E84C4C",
+    "Fairness Off-Peak":         "#4C9BE8",
+    "Pressure Fairness Peak":    "#E8C34C",
+    "Pressure Fairness Off-Peak":"#9B4CE8", 
 }
 
 def load(path):
@@ -94,7 +86,8 @@ def select_actions(states, agents):
         for j in INTERSECTIONS
     }
 
-def run_episode_extended(env, agents):
+def run_episode_extended(env, agents, seed=0):
+    env.seed = seed
     states = env.reset()
 
     wait_history = {j: [] for j in INTERSECTIONS}
@@ -125,10 +118,20 @@ def collect_heatmap_data():
         print(f'running {label}')
         env = get_env(scenario, reward_fn="local")
         agents = load_agents(env, models_dir)
-        wait_history, _ = run_episode_extended(env, agents)
+
+        all_wait_histories = []
+        for ep in range(5):
+            print(f'episode {ep+1}/5')
+            env.seed = DEFAULT_SEED[ep]
+            wait_history, _ = run_episode_extended(env, agents)
+            all_wait_histories.append(wait_history)
+
         env.close()
 
-        means = {j: float(np.mean(wait_history[j])) for j in INTERSECTIONS}
+        means = {
+            j: float(np.mean([np.mean(ep[j]) for ep in all_wait_histories]))
+            for j in INTERSECTIONS
+        }
         if scenario == "peak":
             peak_data[label] = means
         else:
@@ -171,11 +174,60 @@ def run_heatmap_analysis():
     plot_heatmap_combined(peak_data, "Mean Waiting Time per Intersection Peak", "heatmap_peak.png")
     plot_heatmap_combined(offpeak_data, "Mean Waiting Time per Intersection Off-Peak", "heatmap_off_peak.png")
 
+def collect_starvation_data():
+    '''Run all fairness model inside peak and off peak scenario (one episode)'''
+    results = {}
+
+    for label, (models_dir, scenario) in FAIRNESS_MODELS.items():
+        print(f'running {label}')
+        env = get_env(scenario, reward_fn="local")
+        agents = load_agents(env, models_dir)
+
+        env.seed = 0
+        _, starvation_history = run_episode_extended(env, agents)
+        env.close()
+
+        results[label] = starvation_history
+
+    return results
+
+def plot_starvation_timeseries(results):
+    fig, axes = plt.subplots(2, 2, figsize=(14, 8), sharex=True)
+    axes = axes.flatten()
+
+    for idx, j in enumerate(INTERSECTIONS):
+        ax = axes[idx]
+        for label, starvation_history in results.items():
+            ax.plot(
+                starvation_history[j],
+                label=label,
+                color=MODEL_COLORS[label],
+                linewidth=1.2,
+                alpha=0.85,
+            )
+        ax.set_title(f"Intersection {j}", fontsize=11, fontweight="bold")
+        ax.set_xlabel("Timestep")
+        ax.set_ylabel("Max Red Time (s)")
+        ax.legend(fontsize=7)
+        ax.grid(True, alpha=0.3)
+
+    fig.suptitle("Phase Starvation Over Time (Fairness Models)", fontsize=13, fontweight="bold")
+    fig.tight_layout()
+
+    os.makedirs(STARVATION_DIR, exist_ok=True)
+    path = os.path.join(STARVATION_DIR, "starvation_timeseries.png")
+    fig.savefig(path, dpi=150, bbox_inches="tight")
+    print(f"  Saved: starvation_timeseries.png")
+    plt.close(fig)
+
 def main():
     os.makedirs(HEATMAP_DIR, exist_ok=True)
     os.makedirs(STARVATION_DIR, exist_ok=True)
 
-    run_heatmap_analysis()
+    # uncomment below if needed heatmap, rn i only need phase starvation
+    # run_heatmap_analysis()
+    starvation_data = collect_starvation_data()
+    plot_starvation_timeseries(starvation_data)
 
 if __name__ == '__main__':
     print(f"PROJECT_ROOT: {PROJECT_ROOT}")
