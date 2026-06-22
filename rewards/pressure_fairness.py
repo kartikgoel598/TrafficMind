@@ -11,6 +11,7 @@ def pressure_fairness_reward(
     lam=0.1,
     gamma=1.5
 ):
+    """Calculate fairness pressure reward considering neighbors and starvation."""
     neighbour_total = sum(neigh_queues)
 
     base_penalty = (

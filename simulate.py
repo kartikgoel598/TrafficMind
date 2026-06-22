@@ -21,6 +21,7 @@ INTERSECTIONS = ["J1", "J2", "J4", "J5"]
 
 
 def parse_args():
+    """Parse command line arguments for simulation."""
     parser = argparse.ArgumentParser(description="Run a trained checkpoint in SUMO")
     parser.add_argument(
         "--checkpoint-dir",
@@ -47,6 +48,7 @@ def parse_args():
 
 
 def get_config_path(scenario: str) -> str:
+    """Get the path to the SUMO configuration file for a given scenario."""
     base_dir = os.path.dirname(os.path.abspath(__file__))
     configs = {
         "peak": os.path.join(base_dir, "sumo", "configs", "peak.sumocfg"),
@@ -56,6 +58,7 @@ def get_config_path(scenario: str) -> str:
 
 
 def main():
+    """Main entry point for running a trained checkpoint in SUMO."""
     args = parse_args()
 
     env = SumoEnvironment(

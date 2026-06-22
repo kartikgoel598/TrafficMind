@@ -7,10 +7,7 @@ import os
 matplotlib.use('Agg')
 
 def plot_results(output_dir):
-    """
-    output_dir ke results.json se graphs banao
-    Graphs output_dir mein save honge
-    """
+    """Generate reward and loss plots from results.json."""
 
     results_path = os.path.join(output_dir, 'results.json')
     if not os.path.exists(results_path):

@@ -34,21 +34,25 @@ LIVE_B = str(DASHBOARD_DIR / "live_b.json")
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
+    """Serve the home page."""
     html_path = Path(__file__).parent / "templates/home.html"
     return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
 
 @app.get("/comparison", response_class=HTMLResponse)
 async def read_comparison_page():
+    """Serve the comparison page."""
     html_path = Path(__file__).parent / "templates/comparison.html"
     return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
 
 @app.get("/results", response_class=HTMLResponse)
 async def read_comparison_page():
+    """Serve the results page."""
     html_path = Path(__file__).parent / "templates/results.html"
     return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
 
 @app.get("/training_graph", response_class=HTMLResponse)
 async def read_training_graph():
+    """Serve the training graph page."""
     html_path = Path(__file__).parent / "templates/training_graph.html"
     return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
 
@@ -57,6 +61,7 @@ async def read_training_graph():
 
 @app.post("/run")
 async def run_versus(payload: dict):
+    """Launch two SUMO simulations for comparison."""
     """
     Expected payload:
     {
@@ -112,6 +117,7 @@ async def run_versus(payload: dict):
 # ── WebSocket: stream live stats to browser ────────────────────────────────────
 
 def read_live(path: str) -> Optional[dict]:
+    """Read live stats from a JSON file."""
     try:
         with open(path) as f:
             return json.load(f)
@@ -121,6 +127,7 @@ def read_live(path: str) -> Optional[dict]:
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for streaming live stats."""
     await websocket.accept()
     try:
         while True:
@@ -149,6 +156,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
 @app.get("/models")
 def list_models():
+    """List available model directories."""
     outputs = Path(__file__).parent.parent.resolve() / "outputs"
     if not outputs.exists():
         return {"folders": []}

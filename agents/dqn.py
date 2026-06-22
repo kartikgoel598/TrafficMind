@@ -5,7 +5,9 @@ import torch.nn as nn
 import torch.optim as optim
 
 class QNetwork(nn.Module):
+    """Neural network for Q-value approximation."""
     def __init__(self,state_size,action_size):
+        """Initialize the Q-network."""
         super(QNetwork,self).__init__()
         self.network  = nn.Sequential(
             nn.Linear(state_size,128),
@@ -15,14 +17,17 @@ class QNetwork(nn.Module):
             nn.Linear(128,action_size)
         )
     def forward(self,x):
+        """Forward pass through the network."""
         return self.network(x)
 
 class DQNAgent:
+    """Deep Q-Network agent for traffic signal control."""
     def __init__(self, state_size, action_size,
                  lr=0.001, gamma=0.99,
                  epsilon=1.0, epsilon_min=0.01,
                  epsilon_decay=0.999991,
                  target_update_freq=500):
+        """Initialize the DQN agent."""
         
         self.state_size  = state_size
         self.action_size = action_size
@@ -46,6 +51,7 @@ class DQNAgent:
     
     # returns an int 
     def select_action(self,state):
+        """Select an action using epsilon-greedy policy."""
         phase_time = state[9]   # normalised, < 1.0 means switching blocked
         is_yellow = state[10]   # 1.0 if yellow, 0.0 if not
 
@@ -62,6 +68,7 @@ class DQNAgent:
         return q_values.argmax().item()
     
     def train_step(self,replay_buffer, batch_size=64):
+        """Train the agent on a batch of experiences."""
         if not replay_buffer.is_ready(batch_size):
             return None
         states,actions,rewards,next_states,dones = replay_buffer.sample(batch_size)
@@ -98,16 +105,19 @@ class DQNAgent:
         return loss.item()
     
     def decay_epsilon(self):
+        """Decay the exploration rate."""
         self.epsilon = max(
             self.epsilon_min,
             self.epsilon * self.epsilon_decay,
         )
 
     def _update_target_network(self):
+        """Update the target network with main network weights."""
          self.target_network.load_state_dict(
             self.main_network.state_dict()
         )
     def save(self, path):
+        """Save the agent's state to a file."""
         # Save full training state: weights, target network, optimizer,
         # epsilon, and gradient-step counter.
         payload = {
@@ -122,6 +132,7 @@ class DQNAgent:
         torch.save(payload, path)
 
     def load(self, path):
+        """Load the agent's state from a file."""
         checkpoint = torch.load(path, map_location=self.device)
 
         # Backward compatibility: old checkpoints may only store model weights.

@@ -25,6 +25,7 @@ from agents.replay_buffer import ReplayBuffer
 from utils.logger import logger
 
 def parse_args():
+    """Parse command line arguments for training."""
     parser = argparse.ArgumentParser(
         description='TrafficMind - DQN Traffic Signal Control'
     )
@@ -86,6 +87,7 @@ def parse_args():
     return parser.parse_args()
 
 def set_seed(seed):
+    """Set random seed for reproducibility."""
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -95,6 +97,7 @@ def set_seed(seed):
 
 
 def get_config_path(scenario):
+    """Get the path to the SUMO configuration file for a given scenario."""
     base_dir = os.path.dirname(os.path.abspath(__file__))
 
     configs = {
@@ -105,6 +108,7 @@ def get_config_path(scenario):
 
 
 def train(args):
+    """Train DQN agents for traffic signal control."""
     print(f"CUDA available: {torch.cuda.is_available()}")
     if torch.cuda.is_available():
         print(f"GPU: {torch.cuda.get_device_name(0)}")

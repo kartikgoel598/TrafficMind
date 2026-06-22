@@ -2,10 +2,7 @@ import traci
 
 
 def get_current_green_lanes(env, junction):
-    """
-    Return incoming lanes that currently have green signal at a junction.
-    Uses SUMO's actual traffic light state instead of hard-coded lane indices.
-    """
+    """Return incoming lanes that currently have green signal at a junction."""
     green_lanes = set()
 
     signal_state = traci.trafficlight.getRedYellowGreenState(junction)
@@ -25,9 +22,7 @@ def get_current_green_lanes(env, junction):
 
 
 def get_green_red_queues(env, junction):
-    """
-    Return queue totals for currently green lanes and red lanes.
-    """
+    """Return queue totals for currently green lanes and red lanes."""
     green_lanes = get_current_green_lanes(env, junction)
 
     all_lanes = set(env.lanes[junction])

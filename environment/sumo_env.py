@@ -12,7 +12,9 @@ from utils.traffic_signal_utils import get_green_red_queues
 
 # READY TO TRAIN
 class SumoEnvironment:
+    """SUMO traffic simulation environment for training DQN agents."""
     def __init__(self,config_path,reward_fn='local',use_gui=False,seed = 42):
+        """Initialize the SUMO environment."""
         self.seed = seed
         self.config_path = config_path
         self.reward_fn = reward_fn
@@ -49,6 +51,7 @@ class SumoEnvironment:
         self._yellow_timer = {j: 0 for j in self.intersections}     # how long has it been yellow in an intersection (part of 1.2 critical fix)
 
     def reset(self):
+        """Reset the environment and return initial state."""
         if traci.isLoaded():
             traci.close()
 
@@ -84,6 +87,7 @@ class SumoEnvironment:
     fix 4 : 1.4 High fix, added yellow light phase to state
     '''
     def step(self,actions):
+        """Execute one step in the environment."""
         # track what SUMO actually executed (if agent want to changem, but min_green blocked, then store 0)
         executed_actions = {}
         pending_phases = {} # store all phases here
@@ -133,6 +137,7 @@ class SumoEnvironment:
 
     # return phase of specified junction in the SUMO currently
     def _get_true_phase(self, junction):
+        """Get the true phase of a junction from SUMO."""
         '''
         0 (green horizontal) -> 0
         1 (yellow horizontal) -> 0
@@ -164,6 +169,7 @@ class SumoEnvironment:
     '''
     # return 12 states of all junction
     def _get_state(self):
+        """Get the current state for all intersections."""
         states = {}
 
         for junction in self.intersections:
@@ -196,6 +202,7 @@ class SumoEnvironment:
         return states
 
     def compute_reward(self, executed_actions=None):
+        """Compute rewards for all intersections based on the reward function."""
         if executed_actions is None:
             executed_actions = {j: 0 for j in self.intersections}
             
@@ -287,6 +294,7 @@ class SumoEnvironment:
 
 
     def _update_red_time(self): # self._red_time = {j: [0, 0] for j in self.intersections}
+        """Update red time tracking for all intersections."""
         for junction in self.intersections:
             # Use SUMO true phase so red-time accounting stays correct in yellow.
             current = self._get_true_phase(junction)
@@ -297,6 +305,7 @@ class SumoEnvironment:
                     self._red_time[junction][phase_idx] += 1
 
     def get_kpis(self):
+        """Get key performance indicators for the current state."""
         # KPI snapshot for logging/evaluation at each control step.
         lane_queue_total = 0.0
         lane_wait_total = 0.0
@@ -331,12 +340,14 @@ class SumoEnvironment:
         }
 
     def _is_done(self):
+        """Check if the episode is done."""
         no_vehicles  = traci.simulation.getMinExpectedNumber() == 0
         time_up      = self._step >= 900
 
         return no_vehicles or time_up
 
     def close(self):
+        """Close the SUMO simulation."""
         if traci.isLoaded():
             traci.close()
 

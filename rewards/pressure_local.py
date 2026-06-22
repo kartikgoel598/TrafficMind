@@ -7,6 +7,7 @@ def pressure_local_reward(
     alpha=0.5,
     beta=2.0
 ):
+    """Calculate local pressure reward based on queue pressure."""
    
     base_penalty = own_queue + alpha * own_wait
 
