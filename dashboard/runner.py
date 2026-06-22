@@ -65,6 +65,10 @@ def webster_static_action(env, junction, state, timing):
     return 0
 
 def load_dqn_agents(env, models_dir):
+    
+    if not os.path.isabs(models_dir):
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        models_dir = os.path.join(project_root, models_dir)
     agents = {}
     for j in INTERSECTIONS:
         path = os.path.join(models_dir, f"agent_{j}_final.pth")
@@ -132,7 +136,7 @@ def parse_args():
 
 
 def get_config_path(scenario):
-    base = os.path.dirname(os.path.abspath(__file__))
+    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     return {
         "peak":     os.path.join(base, "sumo", "configs", "peak.sumocfg"),
         "off_peak": os.path.join(base, "sumo", "configs", "off_peak.sumocfg"),

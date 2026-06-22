@@ -20,13 +20,16 @@ from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="TrafficMind Versus")
 
-LIVE_A = "live_a.json"
-LIVE_B = "live_b.json"
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
-BASE_DIR = Path(__file__).parent.parent
-app.mount("/plots", StaticFiles(directory=str(BASE_DIR / "output_plots")), name="plots")
+DASHBOARD_DIR = Path(__file__).parent.resolve()
+PROJECT_ROOT = DASHBOARD_DIR.parent.resolve()
+RUNNER_PATH = DASHBOARD_DIR / "runner.py"
+OUTPUTS_DIR = PROJECT_ROOT / "outputs"
+app.mount("/plots", StaticFiles(directory=str(PROJECT_ROOT / "output_plots")), name="plots")
 
+LIVE_A = str(DASHBOARD_DIR / "live_a.json")
+LIVE_B = str(DASHBOARD_DIR / "live_b.json")
 # ── Serve dashboard HTML ───────────────────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)
@@ -98,10 +101,10 @@ async def run_versus(payload: dict):
     if payload["agent_b"] == "trained_dqn" and payload.get("models_dir_b"):
         cmd_b += ["--models-dir", payload["models_dir_b"]]
 
-    subprocess.Popen(cmd_a, cwd=Path(".").resolve())
+    subprocess.Popen(cmd_a, cwd=str(DASHBOARD_DIR))
     # Small delay so the two SUMO GUIs don't fight over the same port
     await asyncio.sleep(1.5)
-    subprocess.Popen(cmd_b, cwd=Path(".").resolve())
+    subprocess.Popen(cmd_b, cwd=str(DASHBOARD_DIR))
 
     return {"status": "launched"}
 

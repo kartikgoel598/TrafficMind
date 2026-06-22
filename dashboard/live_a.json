@@ -1,0 +1,1 @@
+{"status": "done", "agent": "trained_dqn", "slot": "a", "seed": 42, "scenario": "off_peak", "step": 891, "sim_time": 0.0, "mean_waiting_time": 0.0, "mean_queue_length": 0.0, "total_waiting_time": 0.0, "max_lane_wait": 18.0, "throughput": 152, "switch_count": 120, "avg_mean_wait": 1.11, "avg_mean_queue": 0.05, "avg_total_wait": 3.8}
