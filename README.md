@@ -34,26 +34,26 @@ TrafficMind is a deep reinforcement learning traffic signal control system built
 │                           TrafficMind Pipeline                          │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
-│  ┌──────────────┐    TraCI     ┌──────────────────┐                    │
-│  │ SUMO Network │◄────────────►│  SumoEnvironment │                    │
-│  │ (grid.net)   │              │  state / reward  │                    │
-│  └──────────────┘              │  yellow FSM      │                    │
-│         ▲                      └────────┬─────────┘                    │
-│         │ routes                        │ 13-dim obs, scalar reward    │
-│  peak / off_peak                        ▼                              │
-│                              ┌──────────────────────┐                  │
-│                              │ 4 × DQNAgent (IQL)   │                  │
-│                              │ replay + train_step  │                  │
-│                              └──────────┬───────────┘                  │
-│                                         │                              │
-│         ┌───────────────────────────────┼───────────────────────┐      │
-│         ▼                               ▼                       ▼      │
-│   main.py (train)              evaluate.py (benchmark)   dashboard/  │
-│   outputs/ + results.json      evaluations/*.json        live JSON   │
+│  ┌──────────────┐    TraCI     ┌──────────────────┐                     │
+│  │ SUMO Network │◄────────────►│  SumoEnvironment │                     │
+│  │ (grid.net)   │              │  state / reward  │                     │
+│  └──────────────┘              │  yellow FSM      │                     │
+│         ▲                      └────────┬─────────┘                     │
+│         │ routes                        │ 13-dim obs, scalar reward     │
+│  peak / off_peak                        ▼                               │
+│                              ┌──────────────────────┐                   │
+│                              │ 4 × DQNAgent (IQL)   │                   │
+│                              │ replay + train_step  │                   │
+│                              └──────────┬───────────┘                   │
+│                                         │                               │
+│         ┌───────────────────────────────┼───────────────────────┐       │
+│         ▼                               ▼                       ▼       │
+│   main.py (train)              evaluate.py (benchmark)   dashboard/     │
+│   outputs/ + results.json      evaluations/*.json        live JSON      │
 │                                                                         │
-│         └───────────────────────────────┬───────────────────────┘      │
-│                                         ▼                              │
-│                          plot_result.py → output_plots/                │
+│         └───────────────────────────────┬───────────────────────┘       │
+│                                         ▼                               │
+│                          plot_result.py → output_plots/                 │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -78,6 +78,7 @@ TrafficMind/
 │   └── sumo_env.py             # SUMO TraCI wrapper (state, rewards, KPIs, yellow FSM)
 ├── evaluations/                # Evaluation JSON outputs (from evaluate.py --all)
 ├── evaluate.py                 # Benchmark trained DQN vs. baselines
+├── evaluate_extension.py       # Heatmap of per-intersection waiting time and phase starvation time-series
 ├── main.py                     # Training entry point
 ├── output_plots/               # Batch plots from plot_result.py
 ├── outputs/                    # Training runs (models, results.json, results.csv)
@@ -91,6 +92,7 @@ TrafficMind/
 │   ├── pressure_cooperative.py # cooperative + pressure
 │   └── pressure_fairness.py    # fairness + pressure
 ├── simulate.py                 # Run a trained checkpoint in SUMO GUI
+├── statistical_analysis.py     # Conduct paired t-tests comparing DQN formulations against baselines 
 ├── sumo/
 │   ├── configs/                # peak.sumocfg, off_peak.sumocfg (900 s, 1 s steps)
 │   ├── net/grid.net.xml        # 4 signalised junctions
@@ -212,6 +214,23 @@ uvicorn server:app --port 8080
 ```
 
 Open `http://localhost:8080` for the overview. Use `/comparison` for live side-by-side policy runs.
+
+
+### 6. Heatmap waiting time and phase starvation
+
+Plot heatmap of per-intersection waiting time across conditions and formulations and phase starvation time-series for fairness analysis
+
+```bash
+python evaluate_extension.py
+```
+
+### 7. Paired t-tests
+
+Conduct paired t-tests comparing DQN formulations against baselines 
+
+```bash
+python statistical_analysis.py
+```
 
 ### Other useful commands
 
