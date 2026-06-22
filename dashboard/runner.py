@@ -35,9 +35,11 @@ INTERSECTIONS = ["J1", "J2", "J4", "J5"]
 FIXED_TIME_GREEN = 20
 
 def is_switch_legal(state: np.ndarray) -> bool:
+    """Check if switching traffic light phase is legal based on state."""
     return state[10] < 0.5 and state[9] >= 1.0
 
 def fixed_time_action(env, junction, _state):
+    """Return action for fixed-time traffic signal control."""
     if env._yellow_timer[junction] > 0:
         return 0
     if env._phase_time[junction] >= FIXED_TIME_GREEN:
@@ -45,17 +47,20 @@ def fixed_time_action(env, junction, _state):
     return 0
 
 def random_legal_action(_env, _junction, state):
+    """Return random legal action for traffic signal control."""
     if not is_switch_legal(state):
         return 0
     return random.randint(0, 1)
 
 def greedy_queue_action(env, junction, state):
+    """Return action based on greedy queue comparison."""
     if not is_switch_legal(state):
         return 0
     green_q, red_q = get_green_red_queues(env, junction)
     return 1 if red_q > green_q else 0
 
 def webster_static_action(env, junction, state, timing):
+    """Return action for Webster static timing control."""
     if env._yellow_timer[junction] > 0:
         return 0
     phase = env._current_phase[junction]
@@ -65,6 +70,7 @@ def webster_static_action(env, junction, state, timing):
     return 0
 
 def load_dqn_agents(env, models_dir):
+    """Load trained DQN agents from a directory."""
     agents = {}
     for j in INTERSECTIONS:
         path = os.path.join(models_dir, f"agent_{j}_final.pth")
@@ -83,6 +89,7 @@ def load_dqn_agents(env, models_dir):
     return agents
 
 def make_select_fn(policy_name, env, agents=None, webster_timing=None):
+    """Create a policy function for the given policy name."""
     if policy_name == "trained_dqn":
         def select(states):
             return {j: agents[j].select_action(states[j]) for j in INTERSECTIONS}
@@ -106,6 +113,7 @@ def make_select_fn(policy_name, env, agents=None, webster_timing=None):
 # ── Live stats writer ──────────────────────────────────────────────────────────
 
 def write_live(path: str, payload: dict):
+    """Write live stats to a JSON file."""
     try:
         with open(path, "w") as f:
             json.dump(payload, f)
@@ -115,6 +123,7 @@ def write_live(path: str, payload: dict):
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 def parse_args():
+    """Parse command line arguments for the runner."""
     p = argparse.ArgumentParser()
     p.add_argument("--agent",       required=True,
                    choices=["trained_dqn","fixed_time","random_legal",
@@ -132,6 +141,7 @@ def parse_args():
 
 
 def get_config_path(scenario):
+    """Get the path to the SUMO configuration file for a given scenario."""
     base = os.path.dirname(os.path.abspath(__file__))
     return {
         "peak":     os.path.join(base, "sumo", "configs", "peak.sumocfg"),
@@ -140,6 +150,7 @@ def get_config_path(scenario):
 
 
 def main():
+    """Main entry point for the runner."""
     args = parse_args()
     random.seed(args.seed)
     np.random.seed(args.seed)

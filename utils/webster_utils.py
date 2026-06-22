@@ -1,4 +1,5 @@
 def clamp(value, low, high):
+    """Clamp a value between low and high bounds."""
     return max(low, min(value, high))
 
 
@@ -11,14 +12,7 @@ def compute_webster_timing(
     min_cycle=36.0,
     max_cycle=120.0,
 ):
-    """
-    Compute a simplified two-phase static Webster signal plan.
-
-    C = (1.5L + 5) / (1 - Y)
-
-    L = total lost time per cycle
-    Y = sum of critical flow ratios
-    """
+    """Compute a simplified two-phase static Webster signal plan."""
 
     lost_time = 2.0 * yellow_time
 

@@ -112,14 +112,12 @@ DISPLAY_NAMES = {
 }
 
 def _key_from_filename(filename: str, suffix: str) -> str:
-    """
-    Convert a filename like 'pressure_local_peak_result.json' into a COLORS-style
-    key like 'Pressure_Local', given suffix='_peak' or '_off_peak'.
-    """
+    """Convert a filename into a COLORS-style key."""
     name = filename.replace("_result.json", "").replace(suffix, "")
     return "_".join(w.capitalize() for w in name.split("_"))
 
 def normalize(values):
+    """Normalize values to range [0, 1]."""
     arr = np.array(values, dtype=float)
     vmin, vmax = np.nanmin(arr), np.nanmax(arr)
     if vmax == vmin:
@@ -127,6 +125,7 @@ def normalize(values):
     return (arr - vmin) / (vmax - vmin)
  
 def plot_rewards_normalized(data: dict[str, dict]) -> None:
+    """Plot normalized rewards for all conditions."""
     fig, ax = plt.subplots(figsize=(12, 5))
     for label, result in data.items():
         rewards = result["episode_rewards"]
@@ -149,6 +148,7 @@ def plot_rewards_normalized(data: dict[str, dict]) -> None:
     plt.close(fig)
 
 def plot_loss_normalized(data: dict[str, dict]) -> None:
+    """Plot normalized loss for all conditions."""
     fig, ax = plt.subplots(figsize=(12, 5))
     for label, result in data.items():
         losses = result["episode_losses"]
@@ -178,20 +178,22 @@ def plot_loss_normalized(data: dict[str, dict]) -> None:
 SMOOTH_WINDOW = 20 
 
 def load(path: str) -> dict:
+    """Load JSON data from a file."""
     with open(path, "r") as f:
         return json.load(f)
  
  
 def smooth(values: list, window: int) -> np.ndarray:
+    """Apply moving average smoothing to values."""
     arr = np.array(values, dtype=float)
     kernel = np.ones(window) / window
-    # 'valid' shortens the array; pad with NaN so indices align
     pad = window - 1
     smoothed = np.convolve(arr, kernel, mode="valid")
     return np.concatenate([np.full(pad, np.nan), smoothed])
 
 
 def plot_rewards(data: dict[str, dict], filename:str) -> None:
+    """Plot rewards for different reward functions."""
     labels = list(data.keys())
     fig, axes = plt.subplots(2, 3, figsize=(18, 10), sharey=False)
     axes_flat = axes.flatten()
@@ -221,7 +223,7 @@ def plot_rewards(data: dict[str, dict], filename:str) -> None:
  
  
 def plot_loss(data: dict[str, dict]) -> None:
-    """All on one graph — loss is comparable across reward functions."""
+    """Plot loss for all reward functions on one graph."""
     fig, ax = plt.subplots(figsize=(11, 5))
 
     for label, result in data.items():
@@ -253,6 +255,7 @@ def plot_loss(data: dict[str, dict]) -> None:
 # ── KPI bar-chart helper ──────────────────────────────────────────────────────
 
 def _get_dqn_mean(model_key, kpi_paths, kpi_key):
+    """Get the mean DQN value for a given KPI."""
     try:
         kpi_data = load(kpi_paths[model_key])
         return kpi_data["policies"]["trained_dqn"]["aggregate"][kpi_key]["mean"]
@@ -260,14 +263,7 @@ def _get_dqn_mean(model_key, kpi_paths, kpi_key):
         return float("inf")
     
 def _plot_kpi(kpi_key: str, kpi_paths: dict[str, str], scenario_label: str, subfolder:str | None = None) -> None:
-    """
-    Draw a grouped bar chart for one KPI and one scenario (peak / off-peak).
- 
-    X groups  = reward-function models (keys of kpi_paths)
-    Bars      = policies (POLICY_ORDER)
-    Error bars = ± 1 std from aggregate stats
-    DQN bar   = full opacity + black edge; baselines = 0.65 opacity, no edge
-    """
+    """Draw a grouped bar chart for one KPI and one scenario."""
     y_label, title_suffix = KPI_META[kpi_key]
  
     model_keys = sorted(kpi_paths.keys(), key=lambda k: _get_dqn_mean(k, kpi_paths, kpi_key))
@@ -366,6 +362,7 @@ def _plot_kpi(kpi_key: str, kpi_paths: dict[str, str], scenario_label: str, subf
 # ── Public KPI plot functions ─────────────────────────────────────────────────
  
 def plot_mean_wait_time() -> None:
+    """Plot mean waiting time for peak and off-peak scenarios."""
     if KPI_PATHS_PEAK:
         _plot_kpi("mean_waiting_time", KPI_PATHS_PEAK,    "Peak")
     if KPI_PATHS_OFFPEAK:
@@ -373,6 +370,7 @@ def plot_mean_wait_time() -> None:
  
  
 def plot_mean_queue_time() -> None:
+    """Plot mean queue length for peak and off-peak scenarios."""
     if KPI_PATHS_PEAK:
         _plot_kpi("mean_queue_length", KPI_PATHS_PEAK,    "Peak")
     if KPI_PATHS_OFFPEAK:
@@ -380,6 +378,7 @@ def plot_mean_queue_time() -> None:
  
  
 def plot_total_waiting_time() -> None:
+    """Plot total waiting time for peak and off-peak scenarios."""
     if KPI_PATHS_PEAK:
         _plot_kpi("total_waiting_time", KPI_PATHS_PEAK,    "Peak")
     if KPI_PATHS_OFFPEAK:
@@ -387,6 +386,7 @@ def plot_total_waiting_time() -> None:
  
  
 def plot_max_waiting_time() -> None:
+    """Plot max lane wait time for peak and off-peak scenarios."""
     if KPI_PATHS_PEAK:
         _plot_kpi("max_lane_wait", KPI_PATHS_PEAK,    "Peak")
     if KPI_PATHS_OFFPEAK:
@@ -394,6 +394,7 @@ def plot_max_waiting_time() -> None:
 
 ORIGINAL_KEYS = {"Local_Results.json", "Cooperative_Results.json", "Fairness_Results.json"}
 def plot_kpi_original() -> None:
+    """Plot KPIs for original reward functions."""
     print('plotting kpi originals.')
     peak_paths    = {k: v for k, v in KPI_PATHS_PEAK.items() if k in ORIGINAL_KEYS}
     offpeak_paths = {k: v for k, v in KPI_PATHS_OFFPEAK.items() if k in ORIGINAL_KEYS}
@@ -406,6 +407,7 @@ def plot_kpi_original() -> None:
 
 PRESSURE_KEYS =  {"Pressure_Local_Results.json", "Pressure_Cooperative_Results.json", "Pressure_Fairness_Results.json"}
 def plot_kpi_pressure() -> None:
+    """Plot KPIs for pressure reward functions."""
     print('plotting kpi pressure')
     peak_paths      = {k : v for k, v in KPI_PATHS_PEAK.items() if k in PRESSURE_KEYS}
     offpeak_paths   = {k : v for k, v in KPI_PATHS_OFFPEAK.items() if k in PRESSURE_KEYS}
@@ -424,6 +426,7 @@ def plot_kpi_pressure() -> None:
     total is 8 image (kpi) + 5 image (reward + loss)
 '''
 def main():
+    """Main entry point for plotting results."""
     data = {}
     for label, path in PATHS.items():
         try:

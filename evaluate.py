@@ -107,6 +107,7 @@ def parse_args():
     return parser.parse_args()
 
 def infer_reward_and_scenario(key: str):
+    """Infer reward function and scenario from a model directory name."""
     key_lower = key.lower()
     scenario = "off_peak" if "offpeak" in key_lower else "peak"
     if "pressure_fairness" in key_lower:
@@ -124,6 +125,7 @@ def infer_reward_and_scenario(key: str):
     return reward, scenario
 
 def get_config_path(scenario: str) -> str:
+    """Get the path to the SUMO configuration file for a given scenario."""
     base_dir = os.path.dirname(os.path.abspath(__file__))
     configs = {
         "peak": os.path.join(base_dir, "sumo", "configs", "peak.sumocfg"),
@@ -133,6 +135,7 @@ def get_config_path(scenario: str) -> str:
 
 
 def set_seed(seed: int) -> None:
+    """Set random seed for reproducibility."""
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -141,6 +144,7 @@ def set_seed(seed: int) -> None:
 
 
 def is_switch_legal(state: np.ndarray) -> bool:
+    """Check if switching traffic light phase is legal based on state."""
     phase_time = state[9]
     is_yellow = state[10]
     return is_yellow < 0.5 and phase_time >= 1.0
@@ -167,6 +171,7 @@ def aggregate_episode_kpis(
 
 
 def new_kpi_sum() -> Dict[str, float]:
+    """Create a new dictionary to store KPI sums for an episode."""
     return {
         "mean_waiting_time": 0.0,
         "total_waiting_time": 0.0,
@@ -177,6 +182,7 @@ def new_kpi_sum() -> Dict[str, float]:
 
 
 def load_agents(env: SumoEnvironment, models_dir: str) -> Dict[str, DQNAgent]:
+    """Load trained DQN agents from a directory."""
     agents = {}
     for junction in INTERSECTIONS:
         path = os.path.join(models_dir, f"agent_{junction}_final.pth")
@@ -199,6 +205,7 @@ def load_agents(env: SumoEnvironment, models_dir: str) -> Dict[str, DQNAgent]:
 
 FIXED_TIME_GREEN = 20
 def fixed_time_action(env: SumoEnvironment, junction: str, _state: np.ndarray) -> int:
+    """Return action for fixed-time traffic signal control."""
     if env._yellow_timer[junction] > 0:
         return 0
     if env._phase_time[junction] >= FIXED_TIME_GREEN:
@@ -207,6 +214,7 @@ def fixed_time_action(env: SumoEnvironment, junction: str, _state: np.ndarray) -
 
 
 def random_legal_action(_env: SumoEnvironment, _junction: str, state: np.ndarray) -> int:
+    """Return random legal action for traffic signal control."""
     if not is_switch_legal(state):
         return 0
     return random.randint(0, 1)
@@ -214,6 +222,7 @@ def random_legal_action(_env: SumoEnvironment, _junction: str, state: np.ndarray
 def greedy_queue_action(
     env: SumoEnvironment, junction: str, state: np.ndarray
 ) -> int:
+    """Return action based on greedy queue comparison."""
     if not is_switch_legal(state):
         return 0
 
@@ -253,6 +262,7 @@ def make_policy_fn(
     agents: Optional[Dict[str, DQNAgent]] = None,
     webster_timing: Optional[Dict] = None,
 ) -> Callable[[Dict[str, np.ndarray]], Dict[str, int]]:
+    """Create a policy function for the given policy name."""
     if policy_name == "trained_dqn":
         if agents is None:
             raise ValueError("trained_dqn requires loaded agents")
@@ -290,6 +300,7 @@ def run_episode(
     select_actions: Callable[[Dict[str, np.ndarray]], Dict[str, int]],
     seed: int,
 ) -> Dict[str, float]:
+    """Run a single episode and return KPIs."""
     env.seed = seed
     states = env.reset()
     kpi_sum = new_kpi_sum()
@@ -321,6 +332,7 @@ def run_episode(
 def aggregate_policy_results(
     per_seed_kpis: List[Dict[str, float]],
 ) -> Dict[str, Dict[str, float]]:
+    """Aggregate KPI results across multiple seeds."""
     agg = {}
     for name in KPI_NAMES:
         values = [k[name] for k in per_seed_kpis]
@@ -332,6 +344,7 @@ def aggregate_policy_results(
 
 
 def print_comparison_table(results: Dict) -> None:
+    """Print a comparison table of policy results."""
     policy_stats = {
         p: results["policies"][p]["aggregate"] for p in POLICIES
     }
@@ -355,6 +368,7 @@ def print_comparison_table(results: Dict) -> None:
 
 
 def evaluate(args) -> Dict:
+    """Evaluate trained agents against baseline policies."""
     set_seed(args.seeds[0])
     config_path = get_config_path(args.scenario)
 
@@ -428,6 +442,7 @@ def evaluate(args) -> Dict:
 
 
 def main():
+    """Main entry point for evaluation."""
     print('Starting evaluation...')
     args = parse_args()
 

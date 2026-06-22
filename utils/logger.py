@@ -2,7 +2,9 @@ import csv
 import os 
 
 class logger:
+    """CSV logger for training metrics."""
     def __init__(self,output_dir,filename = 'results.csv'):
+        """Initialize the logger with output directory and filename."""
         self.path = os.path.join(output_dir,filename)
         with open(self.path,'w',newline = '') as f:
             writer = csv.writer(f)
@@ -14,6 +16,7 @@ class logger:
 
     def log(self, episode, avg_reward, avg_loss,
             epsilon, steps, junction_rewards):
+        """Log training metrics to CSV file."""
         with open(self.path, 'a', newline='') as f:
             writer = csv.writer(f)
             writer.writerow([

@@ -9,6 +9,7 @@ def pressure_cooperative_reward(
     beta=0.3,
     gamma=2.0
 ):
+    """Calculate cooperative pressure reward considering neighbors."""
     neighbour_total = sum(neigh_queues)
 
     base_penalty = (
