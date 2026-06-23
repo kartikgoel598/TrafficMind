@@ -114,6 +114,8 @@ main {
   color: var(--text);
   margin-bottom: 0.75rem;
   font-family: var(--mono);
+  border-left: 2px solid var(--a);
+  padding-left: 0.6rem;
 }
 
 /* ── Hero ─────────────────────────────────────────────────────── */
