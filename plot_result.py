@@ -425,6 +425,48 @@ def plot_kpi_pressure() -> None:
     max_wait_time : peak and off peak 2 image
     total is 8 image (kpi) + 5 image (reward + loss)
 '''
+
+def print_metrics_table() -> None:
+    for scenario_label, kpi_paths in [("Peak", KPI_PATHS_PEAK), ("Off-Peak", KPI_PATHS_OFFPEAK)]:
+        for model_key, path in sorted(kpi_paths.items()):
+            try:
+                data = load(path)
+            except FileNotFoundError:
+                print(f"[SKIP] {model_key}: file not found")
+                continue
+
+            policies_present = [p for p in POLICY_ORDER if p in data.get("policies", {})]
+
+            METRICS = [
+                ("mean_waiting_time",  "Mean Wait (s)"),
+                ("total_waiting_time", "Total Wait (s)"),
+                ("mean_queue_length",  "Queue Len (veh)"),
+                ("max_lane_wait",      "Max Wait (s)"),
+            ]
+
+            total_w = 30 + 22 * len(METRICS)
+            print(f"\n{'=' * total_w}")
+            print(f"  Scenario: {model_key} ({scenario_label})")
+            print(f"{'=' * total_w}")
+
+            header = f"{'Policy':<30}" + "".join(f"{m[1]:^22}" for m in METRICS)
+            print(header)
+            print("-" * len(header))
+
+            for policy in policies_present:
+                agg = data["policies"][policy].get("aggregate", {})
+                row = f"{POLICY_LABELS.get(policy, policy):<30}"
+                for metric_key, _ in METRICS:
+                    m    = agg.get(metric_key, {})
+                    mean = m.get("mean")
+                    std  = m.get("std")
+                    cell = f"{mean:.3f} ±{std:.3f}" if mean is not None else "N/A"
+                    row += f"{cell:^22}"
+                print(row)
+
+            print("-" * len(header))
+
+
 def main():
     """Main entry point for plotting results."""
     data = {}
@@ -475,4 +517,4 @@ def main():
     print("Done.")
 
 if __name__ == '__main__':
-    main()
+    print_metrics_table()
