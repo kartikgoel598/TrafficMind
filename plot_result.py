@@ -224,7 +224,7 @@ def plot_rewards(data: dict[str, dict], filename:str) -> None:
  
 def plot_loss(data: dict[str, dict]) -> None:
     """Plot loss for all reward functions on one graph."""
-    fig, ax = plt.subplots(figsize=(11, 5))
+    fig, ax = plt.subplots(figsize=(13, 6))
 
     for label, result in data.items():
         losses = result["episode_losses"]
@@ -237,14 +237,44 @@ def plot_loss(data: dict[str, dict]) -> None:
         ep_nz, l_nz = zip(*nonzero)
         ep_nz, l_nz = np.array(ep_nz), list(l_nz)
 
-        ax.plot(ep_nz, l_nz, color=color, alpha=0.18, linewidth=0.8)
-        ax.plot(ep_nz, smooth(l_nz, SMOOTH_WINDOW),
-                color=color, linewidth=2, label=label)
+        is_pressure = label.startswith("Pressure")
+        is_offpeak  = "OffPeak" in label
 
-    ax.set_title("Training Loss — All Reward Functions", fontsize=14, fontweight="bold", pad=12)
+        lw    = 2.5 if is_pressure else 1.5
+        alpha = 1.0 if is_pressure else 0.6
+        ls    = "--" if is_offpeak  else "-"
+
+        ax.plot(ep_nz, l_nz,
+                color=color, alpha=alpha * 0.18, linewidth=0.8, linestyle=ls)
+        ax.plot(ep_nz, smooth(l_nz, SMOOTH_WINDOW),
+                color=color, linewidth=lw, linestyle=ls, alpha=alpha, label=label)
+
+    handles, labels_list = ax.get_legend_handles_labels()
+    orig_h     = [h for h, l in zip(handles, labels_list) if not l.startswith("Pressure")]
+    orig_l     = [l for l in labels_list if not l.startswith("Pressure")]
+    press_h    = [h for h, l in zip(handles, labels_list) if l.startswith("Pressure")]
+    press_l    = [l for l in labels_list if l.startswith("Pressure")]
+
+    from matplotlib.lines import Line2D
+    sep = Line2D([], [], color="none", label="")          # blank spacer
+    leg_handles = (
+        [Line2D([], [], color="none", label="— Original —")] + orig_h +
+        [sep] +
+        [Line2D([], [], color="none", label="— Pressure —")] + press_h
+    )
+    leg_labels = (
+        ["Original"] + orig_l +
+        [""] +
+        ["Pressure"] + press_l
+    )
+    ax.legend(leg_handles, leg_labels, fontsize=7, loc="upper left",
+              ncol=2, framealpha=0.7)
+
+    ax.set_title("Training Loss — All Reward Functions\n"
+                 "  solid = peak · dashed = off-peak · thick = pressure · thin = original",
+                 fontsize=13, fontweight="bold", pad=12)
     ax.set_xlabel("Episode", fontsize=11)
     ax.set_ylabel("Loss", fontsize=11)
-    ax.legend(fontsize=5)
     ax.grid(True, alpha=0.3, linestyle="--")
     ax.xaxis.set_minor_locator(ticker.AutoMinorLocator())
     fig.tight_layout()
@@ -517,4 +547,4 @@ def main():
     print("Done.")
 
 if __name__ == '__main__':
-    print_metrics_table()
+    main()

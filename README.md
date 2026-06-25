@@ -240,7 +240,7 @@ Per-run training curves:
 python utils/plotter.py outputs/local_peak_20260616_174501
 ```
 
-Watch a trained checkpoint in SUMO GUI:
+(DEPRECATED) Watch a trained checkpoint in SUMO GUI:
 
 ```bash
 python simulate.py --checkpoint-dir outputs/local_peak --scenario peak --reward local
